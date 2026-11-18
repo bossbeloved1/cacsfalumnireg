@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -150,6 +151,71 @@ input[readonly] {
   font-size: 11px;
 }
 
+/* PROFILE PHOTO */
+.photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  margin-bottom: 23px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fbf8;
+  text-align: center;
+}
+
+.photo-preview {
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  border: 4px solid #dce7de;
+  background: #e8f0e9;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-placeholder {
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  border: 2px dashed #b7c9ba;
+  background: #edf4ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.photo-input {
+  display: none;
+}
+
+.photo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--green);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.photo-button:hover {
+  background: var(--green-dark);
+}
+
+.photo-name {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
 button {
   width: 100%;
   min-height: 51px;
@@ -237,7 +303,6 @@ button:disabled {
 
   <main class="card">
 
-    <!-- EMAIL VERIFICATION REQUEST SCREEN -->
     <section id="request-area" class="hidden">
 
       <h1>Correct My Registration</h1>
@@ -268,7 +333,6 @@ button:disabled {
 
     </section>
 
-    <!-- CORRECTION FORM SCREEN -->
     <section id="correction-area" class="hidden">
 
       <h1>Correct My Registration</h1>
@@ -290,6 +354,42 @@ button:disabled {
         </div>
 
         <form id="correction-form">
+
+          <!-- PROFILE PHOTO -->
+          <div class="photo-section">
+
+            <label>Profile Photograph</label>
+
+            <img
+              id="photo-preview"
+              class="photo-preview hidden"
+              alt="Current alumni profile photograph"
+            >
+
+            <div id="photo-placeholder" class="photo-placeholder">
+              No photograph available
+            </div>
+
+            <label for="photo-input" class="photo-button">
+              Choose New Photograph
+            </label>
+
+            <input
+              type="file"
+              id="photo-input"
+              class="photo-input"
+              accept="image/jpeg,image/png,image/gif"
+            >
+
+            <div id="photo-name" class="photo-name">
+              You can keep your existing picture or upload a new one.
+            </div>
+
+            <small class="help">
+              JPG, PNG or GIF · Maximum file size: 5MB
+            </small>
+
+          </div>
 
           <div class="field-grid">
 
@@ -448,13 +548,27 @@ button:disabled {
   const message = document.getElementById("message");
   const saveButton = document.getElementById("save-button");
 
+  const photoInput = document.getElementById("photo-input");
+  const photoPreview = document.getElementById("photo-preview");
+  const photoPlaceholder = document.getElementById("photo-placeholder");
+  const photoName = document.getElementById("photo-name");
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
+
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_PHOTO_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/gif"
+  ];
 
   let supabaseClient = null;
   let verified = false;
   let submitting = false;
   let requesting = false;
+  let selectedPhoto = null;
+  let previewObjectUrl = null;
 
   function showMessage(text, type) {
     message.textContent = text;
@@ -508,6 +622,67 @@ button:disabled {
       value === null || value === undefined ? "" : String(value);
   }
 
+  function displayPhoto(url) {
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
+    }
+
+    if (url) {
+      photoPreview.src = url;
+      photoPreview.classList.remove("hidden");
+      photoPlaceholder.classList.add("hidden");
+    } else {
+      photoPreview.removeAttribute("src");
+      photoPreview.classList.add("hidden");
+      photoPlaceholder.classList.remove("hidden");
+    }
+  }
+
+  photoInput.addEventListener("change", function() {
+    hideMessage();
+
+    const file = photoInput.files && photoInput.files[0];
+
+    if (!file) {
+      selectedPhoto = null;
+      return;
+    }
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      photoInput.value = "";
+      selectedPhoto = null;
+
+      showMessage(
+        "Please choose a JPG, PNG or GIF photograph.",
+        "error"
+      );
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      photoInput.value = "";
+      selectedPhoto = null;
+
+      showMessage(
+        "Your photograph is larger than 5MB. Please choose a smaller image.",
+        "error"
+      );
+      return;
+    }
+
+    selectedPhoto = file;
+
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+    }
+
+    previewObjectUrl = URL.createObjectURL(file);
+    displayPhoto(previewObjectUrl);
+
+    photoName.textContent = "Selected: " + file.name;
+  });
+
   function validateBirthday() {
     const month = document.getElementById("birth_month").value;
     const day = Number(document.getElementById("birth_day").value);
@@ -530,6 +705,30 @@ button:disabled {
     };
 
     return day >= 1 && day <= monthDays[month];
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        const commaIndex = result.indexOf(",");
+
+        if (commaIndex === -1) {
+          reject(new Error("The selected photograph could not be read."));
+          return;
+        }
+
+        resolve(result.substring(commaIndex + 1));
+      };
+
+      reader.onerror = () => {
+        reject(new Error("The selected photograph could not be read."));
+      };
+
+      reader.readAsDataURL(file);
+    });
   }
 
   async function requestVerification(event) {
@@ -564,7 +763,6 @@ button:disabled {
 
       console.log("Correction function response:", data);
 
-      // An unregistered email must show the specific database response.
       if (data && data.code === "EMAIL_NOT_REGISTERED") {
         showMessage(
           data.message || "This email address is not registered in our alumni database. Please check the email address and try again.",
@@ -573,7 +771,6 @@ button:disabled {
         return;
       }
 
-      // A newly sent correction email gets the requested success message.
       if (
         data &&
         data.success === true &&
@@ -587,7 +784,6 @@ button:disabled {
         return;
       }
 
-      // A recent request is successful, but no second email is sent within one minute.
       if (
         data &&
         data.success === true &&
@@ -600,7 +796,6 @@ button:disabled {
         return;
       }
 
-      // Display any other message returned by the Edge Function.
       if (data && data.message) {
         showMessage(data.message, "error");
         return;
@@ -679,9 +874,11 @@ button:disabled {
     setField("phone", alumni.phone);
     setField("profession", alumni.profession);
 
+    // The Edge Function supplies a signed URL for the current photo.
+    displayPhoto(alumni.photo_url || null);
+
     verified = true;
 
-    // Keep the token in memory, but remove it from the visible URL.
     window.history.replaceState(
       {},
       document.title,
@@ -736,6 +933,12 @@ button:disabled {
     saveButton.textContent = "Saving your corrections...";
 
     try {
+      // Attach a new photograph only if one was selected.
+      if (selectedPhoto) {
+        payload.photo_base64 = await fileToBase64(selectedPhoto);
+        payload.photo_content_type = selectedPhoto.type;
+      }
+
       const { data, error } = await supabaseClient.functions.invoke(
         "cacsf-alumni-correction",
         { body: payload }
@@ -755,7 +958,7 @@ button:disabled {
       formArea.classList.add("hidden");
 
       showMessage(
-        "Your registration details have been corrected successfully. Thank you for keeping your CACSF alumni information up to date.",
+        "Your registration details and any selected photograph have been corrected successfully. Thank you for keeping your CACSF alumni information up to date.",
         "success"
       );
 
@@ -763,7 +966,9 @@ button:disabled {
       console.error("Correction submission error:", error);
 
       showMessage(
-        "A connection error occurred. Please try again.",
+        error && error.message
+          ? error.message
+          : "A connection error occurred. Please try again.",
         "error"
       );
 
