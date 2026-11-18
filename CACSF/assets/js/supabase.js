@@ -407,6 +407,29 @@
   }
 
   /* =========================================
+     CUSTOM ALUMNI TITLE
+  ========================================= */
+
+  const alumniTitleSelect = document.getElementById("alumni-title");
+  const customAlumniTitle = document.getElementById("custom-alumni-title");
+
+  if (alumniTitleSelect && customAlumniTitle) {
+    alumniTitleSelect.addEventListener("change", () => {
+      const isOther = alumniTitleSelect.value === "Others";
+
+      customAlumniTitle.hidden = !isOther;
+      customAlumniTitle.disabled = !isOther;
+      customAlumniTitle.required = isOther;
+
+      if (!isOther) {
+        customAlumniTitle.value = "";
+      } else {
+        customAlumniTitle.focus();
+      }
+    });
+  }
+
+  /* =========================================
      ALUMNI REGISTRATION
   ========================================= */
 
@@ -431,6 +454,19 @@
 
       const f = new FormData(alumniForm);
       const file = f.get("photo");
+
+      // Resolve the actual title before saving.
+      const selectedTitle = String(f.get("alias") || "").trim();
+      const customTitle = String(f.get("custom_alias") || "").trim();
+
+      const finalTitle = selectedTitle === "Others"
+        ? customTitle
+        : selectedTitle;
+
+      if (!finalTitle) {
+        status.textContent = "Please enter your title.";
+        return;
+      }
 
       if (!String(f.get("email") || "").trim() || !String(f.get("phone") || "").trim()) {
         status.textContent = "Email address and phone number are required.";
@@ -513,7 +549,9 @@
         }
 
         const payload = {
-          alias: f.get("alias"),
+          // Save the actual custom title, not "Others".
+          alias: finalTitle,
+
           first_name: f.get("first_name"),
           surname: f.get("surname"),
           email: String(f.get("email") || "").trim().toLowerCase(),
@@ -552,6 +590,14 @@
 
         // Celebrate only after Supabase confirms a successful insert.
         alumniForm.reset();
+
+        // Hide and reset the custom title field after submission.
+        if (customAlumniTitle) {
+          customAlumniTitle.hidden = true;
+          customAlumniTitle.disabled = true;
+          customAlumniTitle.required = false;
+          customAlumniTitle.value = "";
+        }
 
         status.textContent =
           "Thank you! Your details have been submitted successfully.";
