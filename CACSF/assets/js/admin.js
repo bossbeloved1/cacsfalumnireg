@@ -43,6 +43,8 @@
   let currentUser = null;
   let monitoringActivity = [];
   let monitoringAdmins = [];
+  let monitoringLoginHistory = [];
+  const selectedLoginIds = new Set();
 
   let isAdmin = false;
   let isSuperAdmin = false;
@@ -1431,6 +1433,164 @@
 
   const selectedActivityIds = new Set();
 
+  /* ==========================================================
+     SUPER ADMIN — LOGIN HISTORY MANAGEMENT
+     ========================================================== */
+
+  function ensureLoginHistoryControls() {
+    if (!isSuperAdmin) return;
+
+    const tableBody = $('admin-login-table');
+    const table = tableBody?.closest('table');
+    if (!table || $('login-history-controls')) return;
+
+    const toolbar = document.createElement('div');
+    toolbar.id = 'login-history-controls';
+    toolbar.className = 'activity-log-controls';
+    toolbar.innerHTML = `
+      <div class="activity-log-toolbar">
+        <label>
+          <input type="checkbox" id="select-visible-login">
+          Select visible
+        </label>
+        <button type="button" class="button" id="delete-selected-login" disabled>
+          Delete selected (<span id="selected-login-count">0</span>)
+        </button>
+        <button type="button" class="button button-danger" id="clear-all-login" disabled>
+          Clear all login history
+        </button>
+      </div>
+      <p id="login-clear-status" role="status" aria-live="polite"></p>
+    `;
+    table.parentElement.insertBefore(toolbar, table);
+
+    const headerRow = table.querySelector('thead tr');
+    if (headerRow && !headerRow.querySelector('[data-login-select-heading]')) {
+      const heading = document.createElement('th');
+      heading.textContent = 'Select';
+      heading.dataset.loginSelectHeading = 'true';
+      headerRow.insertBefore(heading, headerRow.firstElementChild);
+    }
+
+    tableBody.addEventListener('change', event => {
+      const checkbox = event.target.closest('[data-login-select]');
+      if (!checkbox || !isSuperAdmin) return;
+      const id = String(checkbox.dataset.loginSelect);
+      if (checkbox.checked) selectedLoginIds.add(id);
+      else selectedLoginIds.delete(id);
+      renderLoginHistory();
+    });
+
+    $('select-visible-login')?.addEventListener('change', event => {
+      if (!isSuperAdmin) return;
+      monitoringLoginHistory.forEach(item => {
+        const id = String(item.id);
+        if (event.target.checked) selectedLoginIds.add(id);
+        else selectedLoginIds.delete(id);
+      });
+      renderLoginHistory();
+    });
+
+    $('delete-selected-login')?.addEventListener('click', () => {
+      clearLoginHistory([...selectedLoginIds], false);
+    });
+
+    $('clear-all-login')?.addEventListener('click', () => {
+      clearLoginHistory([], true);
+    });
+  }
+
+  function renderLoginHistory() {
+    const table = $('admin-login-table');
+    if (!table) return;
+
+    const availableIds = new Set(
+      monitoringLoginHistory.map(item => String(item.id))
+    );
+    [...selectedLoginIds].forEach(id => {
+      if (!availableIds.has(id)) selectedLoginIds.delete(id);
+    });
+
+    table.innerHTML = monitoringLoginHistory.length
+      ? monitoringLoginHistory.map(item => {
+          const admin = monitoringAdmins.find(a => a.user_id === item.user_id);
+          const id = String(item.id);
+          return `
+            <tr>
+              <td>
+                <input type="checkbox" data-login-select="${esc(id)}"
+                  ${selectedLoginIds.has(id) ? 'checked' : ''}
+                  aria-label="Select login history record">
+              </td>
+              <td>${esc(admin?.email || item.user_id || 'Unknown user')}</td>
+              <td>${esc(item.event_type)}</td>
+              <td>${esc(fmtDateTime(item.created_at))}</td>
+            </tr>
+          `;
+        }).join('')
+      : '<tr><td colspan="4" class="empty-cell">No login history recorded yet.</td></tr>';
+
+    const selectAll = $('select-visible-login');
+    if (selectAll) {
+      selectAll.checked = monitoringLoginHistory.length > 0 &&
+        monitoringLoginHistory.every(item => selectedLoginIds.has(String(item.id)));
+      selectAll.indeterminate = monitoringLoginHistory.some(item =>
+        selectedLoginIds.has(String(item.id))) && !selectAll.checked;
+    }
+
+    const selectedButton = $('delete-selected-login');
+    if (selectedButton) selectedButton.disabled = selectedLoginIds.size === 0;
+    const clearAllButton = $('clear-all-login');
+    if (clearAllButton) clearAllButton.disabled = monitoringLoginHistory.length === 0;
+    const count = $('selected-login-count');
+    if (count) count.textContent = selectedLoginIds.size;
+  }
+
+  async function clearLoginHistory(ids, clearAll) {
+    if (!isSuperAdmin) {
+      say('login-clear-status', 'Only a Super Admin can delete login history.', 'error');
+      return;
+    }
+    if (!clearAll && (!ids || ids.length === 0)) {
+      say('login-clear-status', 'Select at least one login record.', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(clearAll
+      ? 'PERMANENTLY DELETE ALL LOGIN HISTORY? This cannot be undone.'
+      : `PERMANENTLY DELETE ${ids.length} SELECTED LOGIN RECORD(S)? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const button = clearAll ? $('clear-all-login') : $('delete-selected-login');
+    setBusy(button, true, 'Deleting…');
+
+    try {
+      const { data: stillSuperAdmin, error: roleError } =
+        await client.rpc('is_cacsf_super_admin');
+      if (roleError) throw roleError;
+      if (stillSuperAdmin !== true) {
+        throw new Error('Your Super Admin permission is no longer active.');
+      }
+
+      const { data, error } = await client.rpc('clear_cacsf_admin_login_history', {
+        p_login_ids: clearAll ? null : ids,
+        p_clear_all: Boolean(clearAll)
+      });
+      if (error) throw error;
+
+      selectedLoginIds.clear();
+      say('login-clear-status',
+        `${Number(data || 0)} login history record(s) deleted successfully.`,
+        'success');
+      await loadMonitoring();
+    } catch (error) {
+      console.error('Login history deletion failed:', error);
+      say('login-clear-status', error.message || 'Login history could not be deleted.', 'error');
+    } finally {
+      setBusy(button, false);
+    }
+  }
+
   function isProtectedAuditEvent(eventType) {
     return /admin_(invited|suspended|reactivated|role_changed|access_removed)|admin_login|admin_logout|login|logout|security|activity_logs_cleared/i.test(String(eventType || ''));
   }
@@ -1625,8 +1785,10 @@
       const presence = presenceRes.data || [];
       const logins = loginRes.data || [];
       const activity = activityRes.data || [];
+      monitoringLoginHistory = logins;
       monitoringActivity = activity;
       monitoringAdmins = admins;
+      ensureLoginHistoryControls();
 
       const adminSelect = $('activity-admin-filter');
       if (adminSelect) {
@@ -1709,26 +1871,7 @@
       }
 
       if (has('admin-login-table')) {
-        $('admin-login-table').innerHTML =
-          logins.length
-            ? logins.map(item => {
-                const a = byId.get(item.user_id);
-
-                return `
-                  <tr>
-                    <td>${esc(a?.email || item.user_id || 'Unknown user')}</td>
-                    <td>${esc(item.event_type)}</td>
-                    <td>${esc(fmtDateTime(item.created_at))}</td>
-                  </tr>
-                `;
-              }).join('')
-            : `
-              <tr>
-                <td colspan="3" class="empty-cell">
-                  No login history recorded yet.
-                </td>
-              </tr>
-            `;
+        renderLoginHistory();
       }
 
       renderActivityLog();
