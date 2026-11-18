@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Register with the CACSF Alumni Fellowship so we can celebrate your birthday and stay connected.">
+
+<title>CACSF Alumni Registration</title>
+
+<!-- CACSF Personal Logo Browser Tab Icon -->
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logoextension.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/logoextension.png">
+
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+<div class="logo-intro" id="logo-intro" aria-label="CACSF Alumni Fellowship">
+    <div class="logo-intro-inner">
+        <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+
+        <div class="intro-animated-text">
+            <div class="intro-cacsf">CACSF</div>
+            <div class="intro-line intro-line-one">ALUMNI FELLOWSHIP</div>
+            <div class="intro-line intro-line-two">FEDERAL POLYTECHNIC ADO EKITI</div>
+        </div>
+    </div>
+</div>
+
+<header class="register-header">
+  <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship registration">
+    <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+    <span>CACSF <small>ALUMNI FELLOWSHIP</small></span>
+  </a>
+  <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
+</header>
+
+<main class="registration-main">
+  <section class="registration-intro" aria-labelledby="registration-title">
+    <div class="intro-kicker"><span class="kicker-dot"></span> CACSF ALUMNI FELLOWSHIP</div>
+    <h1 id="registration-title">Let us celebrate <em>you.</em></h1>
+    <h2>Your story is part of <em>our story.</em></h2>
+    <p class="intro-support">Share your birthday with the CACSF family, so we can celebrate you.</p>
+    <div class="instruction-card">
+      <span class="instruction-icon" aria-hidden="true">✦</span>
+      <p>Complete the form and your details will be sent to the alumni administrators. Please upload a clear profile photograph (JPG, JPEG, PNG or GIF; maximum 10MB).</p>
+    </div>
+  </section>
+
+  <section class="registration-form-wrap" aria-label="Alumni registration form">
+    <form id="alumni-form" class="site-form registration-form">
+      <div class="form-heading">
+        <span class="form-step">FILL IN YOUR DETAILS</span>
+        <h3>Tell us about yourself</h3>
+        <p>Fields marked with <b>*</b> are required.</p>
+      </div>
+
+      <div class="form-grid">
+        <label><span class="field-label">Title <span class="required-mark">*</span></span>
+          <select name="alias" required>
+            <option value="">Select title</option>
+            <option>Mr.</option><option>Mrs.</option><option>Miss</option>
+            <option>Brother</option><option>Sister</option><option>Comrade</option>
+            <option>Chief</option><option>Others</option><option>Dr.</option><option>Engr.</option>
+            <option>Pastor</option><option>Reverend</option><option>Prophet</option>
+            <option>Prof.</option>
+          </select>
+        </label>
+
+        <label><span class="field-label">First name <span class="required-mark">*</span></span><input name="first_name" required autocomplete="given-name" placeholder="Enter your first name"></label>
+
+        <label><span class="field-label">Surname <span class="required-mark">*</span></span><input name="surname" required autocomplete="family-name" placeholder="Enter your surname"></label>
+
+        <label><span class="field-label">Email address <span class="required-mark">*</span></span><input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
+
+        <label><span class="field-label">Birthday month <span class="required-mark">*</span></span>
+          <select name="birth_month" required>
+            <option value="">Select month</option>
+            <option>January</option><option>February</option><option>March</option><option>April</option>
+            <option>May</option><option>June</option><option>July</option><option>August</option>
+            <option>September</option><option>October</option><option>November</option><option>December</option>
+          </select>
+        </label>
+
+        <label><span class="field-label">Birthday day <span class="required-mark">*</span></span><select name="birth_day" required><option value="">Select day</option></select></label>
+
+        <label><span class="field-label">Graduation year <span class="required-mark">*</span></span><select name="graduation_year" id="graduation-year" required><option value="">Select year</option></select></label>
+
+        <label><span class="field-label">Phone number <span class="required-mark">*</span></span><input name="phone" type="tel" required autocomplete="tel" placeholder="Enter your phone number"></label>
+
+        <label class="full upload-field"><span class="field-label">Profile photograph <span class="required-mark">*</span></span>
+          <input name="photo" type="file" accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif" required>
+          <small>JPG, JPEG, PNG or GIF · Maximum file size 10MB</small>
+        </label>
+
+        <label class="full">Profession / Occupation <small class="optional-label">Optional</small><input name="profession" placeholder="e.g. Engineer, Teacher, Entrepreneur"></label>
+
+        <label class="full check-label"><input type="checkbox" name="consent" required> I agree that CACSF Alumni Fellowship may use these details to celebrate my birthday and communicate alumni updates.</label>
+      </div>
+
+      <button class="btn btn-primary registration-submit" type="submit">SUBMIT MY DETAILS <span aria-hidden="true">↗</span></button>
+      <p class="form-status" id="alumni-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+<p class="correction-link">
+  Already registered but made a mistake?
+  <a href="correction.html">Correct My Registration</a>
+</p>
+
+  <div class="registration-footnote">
+    <img src="assets/cacsf-logo.png" alt="CACSF logo">
+    <span>CACSF..... LIBERATION FAMILY</span>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/supabase.js"></script>
+
+</body>
+</html>
