@@ -2,1001 +2,1079 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#123c2b">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 
-<title>Correct My Registration | CACSF Alumni Fellowship</title>
+  <title>Correct Registration Details | CACSF Alumni</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<style>
-:root {
-  --green: #176b45;
-  --green-dark: #123c2b;
-  --bg: #eef5ef;
-  --surface: #fff;
-  --text: #193529;
-  --muted: #68796f;
-  --border: #dce7de;
-  --danger: #b42318;
-}
+  <style>
+    :root {
+      --green: #176b45;
+      --green-dark: #123c2b;
+      --bg: #eef5ef;
+      --surface: #ffffff;
+      --text: #193529;
+      --muted: #68796f;
+      --border: #dce7de;
+      --danger: #b42318;
+      --success: #176b45;
+      --shadow: 0 12px 35px rgba(18, 60, 43, .08);
+    }
 
-* { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  padding: 35px 16px;
-  background:
-    radial-gradient(circle at top right, rgba(228,189,72,.13), transparent 35%),
-    var(--bg);
-  color: var(--text);
-  font-family: "DM Sans", sans-serif;
-}
+    body {
+      margin: 0;
+      padding: 35px 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+    }
 
-.container {
-  width: 100%;
-  max-width: 650px;
-  margin: 0 auto;
-}
+    .page {
+      width: 100%;
+      max-width: 760px;
+      margin: auto;
+    }
 
-.brand {
-  text-align: center;
-  margin-bottom: 25px;
-}
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
 
-.brand h2 {
-  margin: 0;
-  color: var(--green-dark);
-  font-family: Manrope, sans-serif;
-  font-size: 23px;
-  font-weight: 800;
-}
+    .logo {
+      width: 75px;
+      height: 75px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
 
-.brand p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-}
+    h1, h2, h3 {
+      font-family: "Manrope", sans-serif;
+    }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 30px;
-  box-shadow: 0 15px 45px rgba(20,55,35,.08);
-}
+    .header h1 {
+      font-size: 27px;
+      margin: 0 0 8px;
+      color: var(--green-dark);
+    }
 
-h1 {
-  margin: 0 0 9px;
-  text-align: center;
-  font-family: Manrope, sans-serif;
-  font-size: clamp(25px,5vw,34px);
-  color: var(--green-dark);
-}
+    .header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
 
-.intro {
-  margin: 0 auto 25px;
-  max-width: 450px;
-  text-align: center;
-  line-height: 1.7;
-  color: var(--muted);
-  font-size: 14px;
-}
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
 
-.notice {
-  padding: 13px 15px;
-  margin-bottom: 23px;
-  border: 1px solid #dce8dc;
-  border-left: 4px solid var(--green);
-  border-radius: 8px;
-  background: #f5faf5;
-  color: #365442;
-  font-size: 13px;
-  line-height: 1.6;
-}
+    .card h2 {
+      font-size: 20px;
+      margin: 0 0 8px;
+      color: var(--green-dark);
+    }
 
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 17px;
-}
+    .description {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
 
-.field { min-width: 0; }
-.full { grid-column: 1 / -1; }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 17px;
+    }
 
-label {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-}
+    .field {
+      min-width: 0;
+    }
 
-input, select {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  outline: none;
-  background: #fff;
-  color: #193529;
-  font-family: inherit;
-  font-size: 14px;
-}
+    .field.full {
+      grid-column: 1 / -1;
+    }
 
-input:focus, select:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(23,107,69,.10);
-}
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
 
-input[readonly] {
-  background: #f0f3f0;
-  color: #68796f;
-  cursor: not-allowed;
-}
+    input, select {
+      width: 100%;
+      min-height: 47px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
 
-.help {
-  display: block;
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 11px;
-}
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(23, 107, 69, .10);
+    }
 
-/* PROFILE PHOTO */
-.photo-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px;
-  margin-bottom: 23px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #f8fbf8;
-  text-align: center;
-}
+    input[readonly] {
+      background: #f3f6f3;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
 
-.photo-preview {
-  width: 125px;
-  height: 125px;
-  border-radius: 50%;
-  border: 4px solid #dce7de;
-  background: #e8f0e9;
-  object-fit: cover;
-  display: block;
-}
+    .help-text {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
-.photo-placeholder {
-  width: 125px;
-  height: 125px;
-  border-radius: 50%;
-  border: 2px dashed #b7c9ba;
-  background: #edf4ee;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  font-size: 12px;
-}
+    .photo-area {
+      padding: 18px;
+      border: 1px dashed #b8cdbd;
+      background: #f8fbf8;
+      border-radius: 12px;
+    }
 
-.photo-input {
-  display: none;
-}
+    .photo-preview-wrap {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
 
-.photo-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  background: var(--green);
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
+    .photo-preview {
+      width: 115px;
+      height: 115px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--green);
+      background: #e7eee8;
+      display: block;
+    }
 
-.photo-button:hover {
-  background: var(--green-dark);
-}
+    .photo-status {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
 
-.photo-name {
-  color: var(--muted);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-}
+    .photo-status strong {
+      display: block;
+      color: var(--green-dark);
+      margin-bottom: 4px;
+    }
 
-button {
-  width: 100%;
-  min-height: 51px;
-  margin-top: 24px;
-  border: 0;
-  border-radius: 9px;
-  background: var(--green);
-  color: #fff;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .2s,transform .2s;
-}
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 49px;
+      padding: 13px 18px;
+      border: 0;
+      border-radius: 9px;
+      background: var(--green);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
 
-button:hover { background: var(--green-dark); }
+    .button:hover {
+      background: var(--green-dark);
+    }
 
-button:disabled {
-  opacity: .65;
-  cursor: not-allowed;
-}
+    .button:active {
+      transform: scale(.99);
+    }
 
-.message {
-  display: none;
-  padding: 13px 15px;
-  margin-top: 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
-}
+    .button:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
 
-.message.success {
-  display: block;
-  color: #176b45;
-  background: #eaf7ed;
-  border: 1px solid #b9e2c4;
-}
+    .message {
+      display: none;
+      padding: 13px 15px;
+      border-radius: 9px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 17px;
+    }
 
-.message.error {
-  display: block;
-  color: var(--danger);
-  background: #fff0ee;
-  border: 1px solid #f2c5bf;
-}
+    .message.success {
+      display: block;
+      color: #176b45;
+      background: #eaf6ee;
+      border: 1px solid #c7e7d1;
+    }
 
-.loading {
-  text-align: center;
-  padding: 30px 10px;
-  color: var(--muted);
-  font-size: 14px;
-}
+    .message.error {
+      display: block;
+      color: var(--danger);
+      background: #fff0ef;
+      border: 1px solid #f4ceca;
+    }
 
-.hidden { display: none !important; }
+    .hidden {
+      display: none !important;
+    }
 
-.footer {
-  text-align: center;
-  margin-top: 22px;
-  color: var(--muted);
-  font-size: 12px;
-}
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 25px;
+    }
 
-.footer a {
-  color: var(--green);
-  font-weight: 700;
-  text-decoration: none;
-}
+    .footer a {
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 700;
+    }
 
-@media(max-width:520px) {
-  body { padding: 22px 12px; }
-  .card { padding: 22px 17px; }
-  .field-grid { grid-template-columns: 1fr; gap: 15px; }
-  .full { grid-column: auto; }
-}
-</style>
+    @media (max-width: 580px) {
+      body {
+        padding: 24px 13px;
+      }
+
+      .card {
+        padding: 21px 17px;
+      }
+
+      .header h1 {
+        font-size: 23px;
+      }
+
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field.full {
+        grid-column: auto;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
+  <main class="page">
 
-  <div class="brand">
-    <h2>CACSF ALUMNI FELLOWSHIP</h2>
-    <p>FEDERAL POLYTECHNIC ADO, EKITI</p>
-  </div>
+    <header class="header">
+      <img
+        src="images/cacsf-logo.png"
+        alt="CACSF Alumni Logo"
+        class="logo"
+        onerror="this.style.display='none'"
+      >
 
-  <main class="card">
+      <h1>Alumni Registration Correction</h1>
 
-    <section id="request-area" class="hidden">
-
-      <h1>Correct My Registration</h1>
-
-      <p class="intro">
-        Made a mistake when registering with CACSF? Verify your registered
-        email address to access and correct your existing alumni details.
+      <p>
+        Update your CACSF alumni registration details and profile photo.
       </p>
+    </header>
+
+    <!-- EMAIL REQUEST SECTION -->
+    <section class="card" id="request-section">
+
+      <h2>Request a Correction Link</h2>
+
+      <p class="description">
+        Enter the email address you used during your alumni registration.
+        A correction link will be sent to your email if it is registered.
+      </p>
+
+      <div id="request-message" class="message" role="alert"></div>
 
       <form id="request-form">
 
-        <div class="field full">
-          <label for="request-email">Registered email address</label>
+        <div class="field">
+          <label for="request-email">Registered Email Address</label>
+
           <input
-            id="request-email"
             type="email"
-            placeholder="Enter your registered email address"
-            autocomplete="email"
+            id="request-email"
+            placeholder="Enter your registered email"
             required
+            autocomplete="email"
           >
         </div>
 
-        <button type="submit" id="request-button">
-          SEND VERIFICATION LINK
+        <br>
+
+        <button type="submit" class="button" id="request-button">
+          Request Correction Link
         </button>
 
       </form>
-
     </section>
 
-    <section id="correction-area" class="hidden">
+    <!-- CORRECTION FORM SECTION -->
+    <section class="card hidden" id="correction-section">
 
-      <h1>Correct My Registration</h1>
+      <h2>Update Your Registration</h2>
 
-      <p class="intro">
-        Review your alumni registration details and correct any information
-        that was entered incorrectly.
+      <p class="description">
+        Review your details carefully and make the necessary corrections.
+        You can also upload a new profile photo.
       </p>
 
-      <div id="loading" class="loading" aria-live="polite">
-        Verifying your correction link. Please wait...
-      </div>
+      <div id="correction-message" class="message" role="alert"></div>
 
-      <div id="form-area" class="hidden">
+      <form id="correction-form">
 
-        <div class="notice">
-          Please check your details carefully before saving.
-          Your registered email address cannot be changed through this page.
-        </div>
+        <div class="field-grid">
 
-        <form id="correction-form">
+          <div class="field">
+            <label for="alias">Alias / Preferred Name</label>
+            <input type="text" id="alias" autocomplete="nickname">
+          </div>
+
+          <div class="field">
+            <label for="first-name">First Name</label>
+            <input type="text" id="first-name" required autocomplete="given-name">
+          </div>
+
+          <div class="field">
+            <label for="surname">Surname</label>
+            <input type="text" id="surname" required autocomplete="family-name">
+          </div>
+
+          <div class="field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" readonly>
+          </div>
+
+          <div class="field">
+            <label for="birth-month">Birth Month</label>
+            <select id="birth-month" required>
+              <option value="">Select month</option>
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="birth-day">Birth Day</label>
+            <select id="birth-day" required>
+              <option value="">Select day</option>
+              <script>
+                for (let day = 1; day <= 31; day++) {
+                  document.write(`<option value="${day}">${day}</option>`);
+                }
+              </script>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="graduation-year">Graduation Year</label>
+            <select id="graduation-year" required>
+              <option value="">Select year</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" autocomplete="tel">
+          </div>
+
+          <div class="field full">
+            <label for="profession">Profession / Occupation</label>
+            <input
+              type="text"
+              id="profession"
+              placeholder="Enter your current profession"
+            >
+          </div>
 
           <!-- PROFILE PHOTO -->
-          <div class="photo-section">
+          <div class="field full">
 
-            <label>Profile Photograph</label>
+            <label for="profile-photo">Profile Photo</label>
 
-            <img
-              id="photo-preview"
-              class="photo-preview hidden"
-              alt="Current alumni profile photograph"
-            >
+            <div class="photo-area">
 
-            <div id="photo-placeholder" class="photo-placeholder">
-              No photograph available
+              <div class="photo-preview-wrap">
+
+                <img
+                  id="photo-preview"
+                  class="photo-preview hidden"
+                  src=""
+                  alt="Profile photo preview"
+                >
+
+                <div class="photo-status">
+                  <strong id="photo-status-title">Your profile photo</strong>
+                  <span id="photo-status-text">
+                    Select a new photo to preview it here.
+                  </span>
+                </div>
+
+              </div>
+
+              <input
+                type="file"
+                id="profile-photo"
+                accept="image/jpeg,image/png,image/gif"
+              >
+
+              <span class="help-text">
+                Accepted formats: JPG, PNG and GIF. Maximum size: 5MB.
+                Leave this field empty if you do not want to change your existing photo.
+              </span>
+
             </div>
-
-            <label for="photo-input" class="photo-button">
-              Choose New Photograph
-            </label>
-
-            <input
-              type="file"
-              id="photo-input"
-              class="photo-input"
-              accept="image/jpeg,image/png,image/gif"
-            >
-
-            <div id="photo-name" class="photo-name">
-              You can keep your existing picture or upload a new one.
-            </div>
-
-            <small class="help">
-              JPG, PNG or GIF · Maximum file size: 5MB
-            </small>
-
           </div>
 
-          <div class="field-grid">
+        </div>
 
-            <div class="field full">
-              <label for="alias">Title</label>
-              <select id="alias" required>
-                <option value="">Select title</option>
-                <option>Mr.</option>
-                <option>Mrs.</option>
-                <option>Miss</option>
-                <option>Brother</option>
-                <option>Sister</option>
-                <option>Dr.</option>
-                <option>Engr.</option>
-                <option>Pastor</option>
-                <option>Reverend</option>
-                <option>Prophet</option>
-                <option>Prof.</option>
-                <option>Comrade</option>
-                <option>Chief</option>
-                <option>Other</option>
-                <option>Others</option>
-              </select>
-            </div>
+        <br>
 
-            <div class="field">
-              <label for="first_name">First Name</label>
-              <input id="first_name" type="text" maxlength="100" required>
-            </div>
+        <button type="submit" class="button" id="update-button">
+          Save Corrections
+        </button>
 
-            <div class="field">
-              <label for="surname">Surname</label>
-              <input id="surname" type="text" maxlength="100" required>
-            </div>
-
-            <div class="field full">
-              <label for="email">Email Address</label>
-              <input id="email" type="email" readonly>
-              <small class="help">
-                Your registered email cannot be changed here.
-              </small>
-            </div>
-
-            <div class="field">
-              <label for="birth_month">Birthday Month</label>
-              <select id="birth_month" required>
-                <option value="">Select month</option>
-                <option>January</option>
-                <option>February</option>
-                <option>March</option>
-                <option>April</option>
-                <option>May</option>
-                <option>June</option>
-                <option>July</option>
-                <option>August</option>
-                <option>September</option>
-                <option>October</option>
-                <option>November</option>
-                <option>December</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="birth_day">Birthday Day</label>
-              <select id="birth_day" required>
-                <option value="">Select day</option>
-                <option value="1">1st</option>
-                <option value="2">2nd</option>
-                <option value="3">3rd</option>
-                <option value="4">4th</option>
-                <option value="5">5th</option>
-                <option value="6">6th</option>
-                <option value="7">7th</option>
-                <option value="8">8th</option>
-                <option value="9">9th</option>
-                <option value="10">10th</option>
-                <option value="11">11th</option>
-                <option value="12">12th</option>
-                <option value="13">13th</option>
-                <option value="14">14th</option>
-                <option value="15">15th</option>
-                <option value="16">16th</option>
-                <option value="17">17th</option>
-                <option value="18">18th</option>
-                <option value="19">19th</option>
-                <option value="20">20th</option>
-                <option value="21">21st</option>
-                <option value="22">22nd</option>
-                <option value="23">23rd</option>
-                <option value="24">24th</option>
-                <option value="25">25th</option>
-                <option value="26">26th</option>
-                <option value="27">27th</option>
-                <option value="28">28th</option>
-                <option value="29">29th</option>
-                <option value="30">30th</option>
-                <option value="31">31st</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="graduation_year">Graduation Year</label>
-              <select id="graduation_year" required>
-                <option value="">Select year</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="phone">Phone Number</label>
-              <input id="phone" type="tel" maxlength="30" required>
-            </div>
-
-            <div class="field full">
-              <label for="profession">Profession / Occupation (Optional)</label>
-              <input id="profession" type="text" maxlength="150">
-            </div>
-
-          </div>
-
-          <button type="submit" id="save-button">
-            Save Corrected Details
-          </button>
-
-        </form>
-      </div>
-
+      </form>
     </section>
 
-    <div id="message" class="message" role="status" aria-live="polite"></div>
+    <footer class="footer">
+      <p>
+        Christ Apostolic Church Student Fellowship (CACSF)<br>
+        Federal Polytechnic, Ado-Ekiti Alumni
+      </p>
+
+      <a href="index.html">Back to Homepage</a>
+    </footer>
 
   </main>
 
-  <div class="footer">
-    CACSF Alumni Fellowship ·
-    <a href="index.html">← Return to registration page</a>
-  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
 
-</div>
+  <script>
+    // --------------------------------------------------
+    // SUPABASE INITIALIZATION
+    // --------------------------------------------------
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/config.js"></script>
+    let supabaseClient = null;
 
-<script>
-(() => {
-  "use strict";
-
-  const requestArea = document.getElementById("request-area");
-  const correctionArea = document.getElementById("correction-area");
-
-  const requestForm = document.getElementById("request-form");
-  const requestButton = document.getElementById("request-button");
-
-  const loading = document.getElementById("loading");
-  const formArea = document.getElementById("form-area");
-  const form = document.getElementById("correction-form");
-  const message = document.getElementById("message");
-  const saveButton = document.getElementById("save-button");
-
-  const photoInput = document.getElementById("photo-input");
-  const photoPreview = document.getElementById("photo-preview");
-  const photoPlaceholder = document.getElementById("photo-placeholder");
-  const photoName = document.getElementById("photo-name");
-
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-
-  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-  const ALLOWED_PHOTO_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/gif"
-  ];
-
-  let supabaseClient = null;
-  let verified = false;
-  let submitting = false;
-  let requesting = false;
-  let selectedPhoto = null;
-  let previewObjectUrl = null;
-
-  function showMessage(text, type) {
-    message.textContent = text;
-    message.className = "message " + type;
-  }
-
-  function hideMessage() {
-    message.textContent = "";
-    message.className = "message";
-  }
-
-  function showError(text) {
-    loading.classList.add("hidden");
-    formArea.classList.add("hidden");
-    showMessage(text, "error");
-  }
-
-  function initializeSupabase() {
     if (
-      !window.CACSF_SUPABASE_URL ||
-      !window.CACSF_SUPABASE_ANON_KEY ||
-      !window.supabase
+      window.CACSF_SUPABASE_URL &&
+      window.CACSF_SUPABASE_ANON_KEY &&
+      window.supabase
     ) {
-      throw new Error("Website configuration could not be loaded.");
-    }
-
-    if (!supabaseClient) {
       supabaseClient = window.supabase.createClient(
         window.CACSF_SUPABASE_URL,
         window.CACSF_SUPABASE_ANON_KEY
       );
     }
 
-    return supabaseClient;
-  }
+    // --------------------------------------------------
+    // GENERAL HELPERS
+    // --------------------------------------------------
 
-  function populateGraduationYears() {
-    const select = document.getElementById("graduation_year");
+    function showMessage(elementId, message, type) {
+      const element = document.getElementById(elementId);
+
+      element.textContent = message;
+      element.className = "message " + type;
+    }
+
+    function hideMessage(elementId) {
+      const element = document.getElementById(elementId);
+
+      element.textContent = "";
+      element.className = "message";
+    }
+
+    function getFunctionError(data, error) {
+      if (data && data.error) {
+        return data.error;
+      }
+
+      if (error && error.message) {
+        return error.message;
+      }
+
+      return "Something went wrong. Please try again.";
+    }
+
+    function getTokenFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token");
+    }
+
+    // --------------------------------------------------
+    // GRADUATION YEAR OPTIONS
+    // --------------------------------------------------
+
+    const graduationYearSelect =
+      document.getElementById("graduation-year");
+
     const currentYear = new Date().getFullYear();
 
     for (let year = currentYear; year >= 1995; year--) {
       const option = document.createElement("option");
-      option.value = String(year);
-      option.textContent = String(year);
-      select.appendChild(option);
-    }
-  }
 
-  function setField(id, value) {
-    document.getElementById(id).value =
-      value === null || value === undefined ? "" : String(value);
-  }
+      option.value = year;
+      option.textContent = year;
 
-  function displayPhoto(url) {
-    if (previewObjectUrl) {
-      URL.revokeObjectURL(previewObjectUrl);
-      previewObjectUrl = null;
+      graduationYearSelect.appendChild(option);
     }
 
-    if (url) {
-      photoPreview.src = url;
+    // --------------------------------------------------
+    // BIRTHDAY VALIDATION
+    // --------------------------------------------------
+
+    const birthMonth = document.getElementById("birth-month");
+    const birthDay = document.getElementById("birth-day");
+
+    function validateBirthday() {
+      const month = birthMonth.value;
+      const day = Number(birthDay.value);
+
+      if (!month || !day) {
+        return true;
+      }
+
+      const monthDays = {
+        January: 31,
+        February: 29,
+        March: 31,
+        April: 30,
+        May: 31,
+        June: 30,
+        July: 31,
+        August: 31,
+        September: 30,
+        October: 31,
+        November: 30,
+        December: 31
+      };
+
+      if (day > monthDays[month]) {
+        showMessage(
+          "correction-message",
+          "Please select a valid birthday for the selected month.",
+          "error"
+        );
+
+        return false;
+      }
+
+      return true;
+    }
+
+    birthMonth.addEventListener("change", validateBirthday);
+    birthDay.addEventListener("change", validateBirthday);
+
+    // --------------------------------------------------
+    // PROFILE PHOTO PREVIEW
+    // --------------------------------------------------
+
+    const profilePhotoInput =
+      document.getElementById("profile-photo");
+
+    const photoPreview =
+      document.getElementById("photo-preview");
+
+    const photoStatusTitle =
+      document.getElementById("photo-status-title");
+
+    const photoStatusText =
+      document.getElementById("photo-status-text");
+
+    let photoPreviewUrl = null;
+
+    const allowedPhotoTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif"
+    ];
+
+    profilePhotoInput.addEventListener("change", function () {
+      hideMessage("correction-message");
+
+      const file = this.files && this.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      if (!allowedPhotoTypes.includes(file.type)) {
+        showMessage(
+          "correction-message",
+          "Invalid photo format. Please select a JPG, PNG or GIF image.",
+          "error"
+        );
+
+        this.value = "";
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showMessage(
+          "correction-message",
+          "Your profile photo must not exceed 5MB.",
+          "error"
+        );
+
+        this.value = "";
+        return;
+      }
+
+      if (photoPreviewUrl) {
+        URL.revokeObjectURL(photoPreviewUrl);
+      }
+
+      photoPreviewUrl = URL.createObjectURL(file);
+
+      photoPreview.src = photoPreviewUrl;
       photoPreview.classList.remove("hidden");
-      photoPlaceholder.classList.add("hidden");
-    } else {
-      photoPreview.removeAttribute("src");
-      photoPreview.classList.add("hidden");
-      photoPlaceholder.classList.remove("hidden");
-    }
-  }
 
-  photoInput.addEventListener("change", function() {
-    hideMessage();
-
-    const file = photoInput.files && photoInput.files[0];
-
-    if (!file) {
-      selectedPhoto = null;
-      return;
-    }
-
-    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-      photoInput.value = "";
-      selectedPhoto = null;
-
-      showMessage(
-        "Please choose a JPG, PNG or GIF photograph.",
-        "error"
-      );
-      return;
-    }
-
-    if (file.size > MAX_PHOTO_BYTES) {
-      photoInput.value = "";
-      selectedPhoto = null;
-
-      showMessage(
-        "Your photograph is larger than 5MB. Please choose a smaller image.",
-        "error"
-      );
-      return;
-    }
-
-    selectedPhoto = file;
-
-    if (previewObjectUrl) {
-      URL.revokeObjectURL(previewObjectUrl);
-    }
-
-    previewObjectUrl = URL.createObjectURL(file);
-    displayPhoto(previewObjectUrl);
-
-    photoName.textContent = "Selected: " + file.name;
-  });
-
-  function validateBirthday() {
-    const month = document.getElementById("birth_month").value;
-    const day = Number(document.getElementById("birth_day").value);
-
-    if (!month || !day) return false;
-
-    const monthDays = {
-      January: 31,
-      February: 29,
-      March: 31,
-      April: 30,
-      May: 31,
-      June: 30,
-      July: 31,
-      August: 31,
-      September: 30,
-      October: 31,
-      November: 30,
-      December: 31
-    };
-
-    return day >= 1 && day <= monthDays[month];
-  }
-
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        const result = String(reader.result || "");
-        const commaIndex = result.indexOf(",");
-
-        if (commaIndex === -1) {
-          reject(new Error("The selected photograph could not be read."));
-          return;
-        }
-
-        resolve(result.substring(commaIndex + 1));
-      };
-
-      reader.onerror = () => {
-        reject(new Error("The selected photograph could not be read."));
-      };
-
-      reader.readAsDataURL(file);
+      photoStatusTitle.textContent = "New photo selected";
+      photoStatusText.textContent =
+        file.name + " — " + (file.size / (1024 * 1024)).toFixed(2) + "MB";
     });
-  }
 
-  async function requestVerification(event) {
-    event.preventDefault();
-    hideMessage();
+    // --------------------------------------------------
+    // EMAIL CORRECTION LINK REQUEST
+    // --------------------------------------------------
 
-    if (requesting) return;
+    const requestForm = document.getElementById("request-form");
 
-    const email = document.getElementById("request-email").value.trim();
+    requestForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
 
-    if (!email) {
-      showMessage("Please enter your registered email address.", "error");
-      return;
-    }
+      hideMessage("request-message");
 
-    requesting = true;
-    requestButton.disabled = true;
-    requestButton.textContent = "SENDING VERIFICATION LINK...";
-
-    try {
-      initializeSupabase();
-
-      const { data, error } = await supabaseClient.functions.invoke(
-        "cacsf-alumni-correction",
-        {
-          body: {
-            action: "request",
-            email: email
-          }
-        }
-      );
-
-      console.log("Correction function response:", data);
-
-      if (data && data.code === "EMAIL_NOT_REGISTERED") {
+      if (!supabaseClient) {
         showMessage(
-          data.message || "This email address is not registered in our alumni database. Please check the email address and try again.",
+          "request-message",
+          "Connection error. Please refresh the page and try again.",
           "error"
         );
         return;
       }
 
-      if (
-        data &&
-        data.success === true &&
-        data.code === "CORRECTION_LINK_SENT"
-      ) {
+      const email = document
+        .getElementById("request-email")
+        .value.trim();
+
+      if (!email) {
         showMessage(
-          "Your correction link has been sent successfully. Please check your inbox and spam folder to continue.",
-          "success"
-        );
-        requestForm.reset();
-        return;
-      }
-
-      if (
-        data &&
-        data.success === true &&
-        data.code === "RECENT_REQUEST"
-      ) {
-        showMessage(
-          data.message || "A correction link was recently sent to this email address. Please check your inbox and spam folder, or wait one minute before requesting another.",
-          "success"
-        );
-        return;
-      }
-
-      if (data && data.message) {
-        showMessage(data.message, "error");
-        return;
-      }
-
-      if (data && data.error) {
-        showMessage(data.error, "error");
-        return;
-      }
-
-      if (error) {
-        console.error("Supabase function error:", error);
-        throw error;
-      }
-
-      showMessage(
-        "We could not process your request. Please try again.",
-        "error"
-      );
-
-    } catch (error) {
-      console.error("Verification request error:", error);
-
-      showMessage(
-        error && error.message
-          ? error.message
-          : "A connection error occurred. Please try again.",
-        "error"
-      );
-
-    } finally {
-      requesting = false;
-      requestButton.disabled = false;
-      requestButton.textContent = "SEND VERIFICATION LINK";
-    }
-  }
-
-  async function verifyLink() {
-    if (!token || !/^[a-f0-9]{64}$/i.test(token)) {
-      showError(
-        "Your correction link is missing or invalid. Please request a new correction link."
-      );
-      return;
-    }
-
-    initializeSupabase();
-
-    const { data, error } = await supabaseClient.functions.invoke(
-      "cacsf-alumni-correction",
-      {
-        body: {
-          action: "verify",
-          token: token
-        }
-      }
-    );
-
-    if (error || !data || !data.success || !data.alumni) {
-      showError(
-        data && data.error
-          ? data.error
-          : "We could not verify this correction link. Please request a new one."
-      );
-      return;
-    }
-
-    const alumni = data.alumni;
-
-    setField("alias", alumni.alias);
-    setField("first_name", alumni.first_name);
-    setField("surname", alumni.surname);
-    setField("email", alumni.email);
-    setField("birth_month", alumni.birth_month);
-    setField("birth_day", alumni.birth_day);
-    setField("graduation_year", alumni.graduation_year);
-    setField("phone", alumni.phone);
-    setField("profession", alumni.profession);
-
-    // The Edge Function supplies a signed URL for the current photo.
-    displayPhoto(alumni.photo_url || null);
-
-    verified = true;
-
-    window.history.replaceState(
-      {},
-      document.title,
-      window.location.pathname
-    );
-
-    loading.classList.add("hidden");
-    formArea.classList.remove("hidden");
-  }
-
-  requestForm.addEventListener("submit", requestVerification);
-
-  form.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    hideMessage();
-
-    if (submitting) return;
-
-    if (!verified || !supabaseClient) {
-      showMessage(
-        "Your correction link has not been verified.",
-        "error"
-      );
-      return;
-    }
-
-    if (!form.reportValidity()) return;
-
-    if (!validateBirthday()) {
-      showMessage(
-        "Please select a valid birthday. February allows a maximum of 29 days, and months with 30 days cannot have a 31st day.",
-        "error"
-      );
-      return;
-    }
-
-    const payload = {
-      action: "update",
-      token: token,
-      alias: document.getElementById("alias").value,
-      first_name: document.getElementById("first_name").value.trim(),
-      surname: document.getElementById("surname").value.trim(),
-      birth_month: document.getElementById("birth_month").value,
-      birth_day: Number(document.getElementById("birth_day").value),
-      graduation_year: Number(document.getElementById("graduation_year").value),
-      phone: document.getElementById("phone").value.trim(),
-      profession: document.getElementById("profession").value.trim()
-    };
-
-    submitting = true;
-    saveButton.disabled = true;
-    saveButton.textContent = "Saving your corrections...";
-
-    try {
-      // Attach a new photograph only if one was selected.
-      if (selectedPhoto) {
-        payload.photo_base64 = await fileToBase64(selectedPhoto);
-        payload.photo_content_type = selectedPhoto.type;
-      }
-
-      const { data, error } = await supabaseClient.functions.invoke(
-        "cacsf-alumni-correction",
-        { body: payload }
-      );
-
-      if (error || !data || !data.success) {
-        showMessage(
-          data && data.error
-            ? data.error
-            : "Your corrections could not be saved. Please try again or request a new correction link.",
+          "request-message",
+          "Please enter your registered email address.",
           "error"
         );
         return;
       }
 
-      verified = false;
-      formArea.classList.add("hidden");
+      const button = document.getElementById("request-button");
+
+      button.disabled = true;
+      button.textContent = "Please wait...";
+
+      try {
+        const { data, error } =
+          await supabaseClient.functions.invoke(
+            "cacsf-alumni-correction",
+            {
+              body: {
+                action: "request",
+                email: email
+              }
+            }
+          );
+
+        if (data && data.error === "EMAIL_NOT_REGISTERED") {
+          showMessage(
+            "request-message",
+            "This email address is not registered in our alumni database. Please check the email address and try again.",
+            "error"
+          );
+        } else if (
+          data &&
+          data.error === "RECENT_REQUEST"
+        ) {
+          showMessage(
+            "request-message",
+            data.message ||
+            "A correction link was recently requested. Please check your inbox and try again later.",
+            "error"
+          );
+        } else if (
+          data &&
+          data.success === true
+        ) {
+          showMessage(
+            "request-message",
+            data.message ||
+            "If an existing registration matches this email address, a verification link will be sent shortly. Please check your inbox and spam folder.",
+            "success"
+          );
+        } else if (error || (data && data.error)) {
+          showMessage(
+            "request-message",
+            getFunctionError(data, error),
+            "error"
+          );
+        } else {
+          showMessage(
+            "request-message",
+            "If an existing registration matches this email address, a verification link will be sent shortly. Please check your inbox and spam folder.",
+            "success"
+          );
+        }
+
+      } catch (error) {
+        console.error("Correction request error:", error);
+
+        showMessage(
+          "request-message",
+          "Unable to process your request at the moment. Please try again.",
+          "error"
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent = "Request Correction Link";
+      }
+    });
+
+    // --------------------------------------------------
+    // VERIFY CORRECTION TOKEN
+    // --------------------------------------------------
+
+    let correctionToken = getTokenFromUrl();
+
+    async function verifyLink() {
+      if (!correctionToken) {
+        return;
+      }
+
+      if (!supabaseClient) {
+        showMessage(
+          "request-message",
+          "Connection error. Please refresh the page and try again.",
+          "error"
+        );
+        return;
+      }
 
       showMessage(
-        "Your registration details and any selected photograph have been corrected successfully. Thank you for keeping your CACSF alumni information up to date.",
+        "request-message",
+        "Verifying your correction link...",
         "success"
       );
 
-    } catch (error) {
-      console.error("Correction submission error:", error);
+      try {
+        const { data, error } =
+          await supabaseClient.functions.invoke(
+            "cacsf-alumni-correction",
+            {
+              body: {
+                action: "verify",
+                token: correctionToken
+              }
+            }
+          );
 
-      showMessage(
-        error && error.message
-          ? error.message
-          : "A connection error occurred. Please try again.",
-        "error"
-      );
+        if (error || !data || !data.success || !data.alumni) {
+          showMessage(
+            "request-message",
+            getFunctionError(data, error) ||
+            "This correction link is invalid or has expired. Please request a new one.",
+            "error"
+          );
 
-    } finally {
-      submitting = false;
-      saveButton.disabled = false;
-      saveButton.textContent = "Save Corrected Details";
+          return;
+        }
+
+        const alumni = data.alumni;
+
+        document.getElementById("alias").value =
+          alumni.alias || "";
+
+        document.getElementById("first-name").value =
+          alumni.first_name || "";
+
+        document.getElementById("surname").value =
+          alumni.surname || "";
+
+        document.getElementById("email").value =
+          alumni.email || "";
+
+        document.getElementById("birth-month").value =
+          alumni.birth_month || "";
+
+        document.getElementById("birth-day").value =
+          alumni.birth_day || "";
+
+        document.getElementById("graduation-year").value =
+          alumni.graduation_year || "";
+
+        document.getElementById("phone").value =
+          alumni.phone || "";
+
+        document.getElementById("profession").value =
+          alumni.profession || "";
+
+        // Display the existing photo if the Edge Function
+        // returns a signed photo_url.
+        if (alumni.photo_url) {
+          photoPreview.src = alumni.photo_url;
+          photoPreview.classList.remove("hidden");
+
+          photoStatusTitle.textContent = "Current profile photo";
+          photoStatusText.textContent =
+            "Choose another image below if you want to replace it.";
+        }
+
+        document.getElementById("request-section")
+          .classList.add("hidden");
+
+        document.getElementById("correction-section")
+          .classList.remove("hidden");
+
+        // Remove the token from the visible URL.
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+
+      } catch (error) {
+        console.error("Token verification error:", error);
+
+        showMessage(
+          "request-message",
+          "Unable to verify your correction link. Please try again.",
+          "error"
+        );
+      }
     }
-  });
 
-  populateGraduationYears();
+    // --------------------------------------------------
+    // CONVERT PHOTO TO BASE64
+    // --------------------------------------------------
 
-  if (token) {
-    correctionArea.classList.remove("hidden");
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
 
-    verifyLink().catch((error) => {
-      console.error("Correction verification error:", error);
-      showError(
-        "Unable to verify your correction link. Please try again."
-      );
+        reader.onload = function () {
+          const result = reader.result;
+
+          if (typeof result !== "string") {
+            reject(new Error("Unable to read the selected photo."));
+            return;
+          }
+
+          const base64 = result.split(",")[1];
+
+          if (!base64) {
+            reject(new Error("Unable to process the selected photo."));
+            return;
+          }
+
+          resolve(base64);
+        };
+
+        reader.onerror = function () {
+          reject(new Error("Unable to read the selected photo."));
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // --------------------------------------------------
+    // SUBMIT CORRECTIONS
+    // --------------------------------------------------
+
+    const correctionForm =
+      document.getElementById("correction-form");
+
+    correctionForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      hideMessage("correction-message");
+
+      if (!correctionToken) {
+        showMessage(
+          "correction-message",
+          "Your correction session is invalid. Please request a new correction link.",
+          "error"
+        );
+        return;
+      }
+
+      if (!validateBirthday()) {
+        return;
+      }
+
+      if (!supabaseClient) {
+        showMessage(
+          "correction-message",
+          "Connection error. Please refresh the page and try again.",
+          "error"
+        );
+        return;
+      }
+
+      const selectedPhoto = profilePhotoInput.files[0];
+
+      if (selectedPhoto) {
+        if (!allowedPhotoTypes.includes(selectedPhoto.type)) {
+          showMessage(
+            "correction-message",
+            "Please select a JPG, PNG or GIF image.",
+            "error"
+          );
+          return;
+        }
+
+        if (selectedPhoto.size > 5 * 1024 * 1024) {
+          showMessage(
+            "correction-message",
+            "Your profile photo must not exceed 5MB.",
+            "error"
+          );
+          return;
+        }
+      }
+
+      const button = document.getElementById("update-button");
+
+      button.disabled = true;
+      button.textContent = "Saving Corrections...";
+
+      try {
+        const payload = {
+          action: "update",
+          token: correctionToken,
+
+          alias: document.getElementById("alias").value.trim(),
+          first_name: document.getElementById("first-name").value.trim(),
+          surname: document.getElementById("surname").value.trim(),
+
+          birth_month: document.getElementById("birth-month").value,
+          birth_day: Number(document.getElementById("birth-day").value),
+
+          graduation_year: Number(
+            document.getElementById("graduation-year").value
+          ),
+
+          phone: document.getElementById("phone").value.trim(),
+          profession: document.getElementById("profession").value.trim()
+        };
+
+        // Only attach photo data when a new photo is selected.
+        // Leaving the field empty keeps the existing photo.
+        if (selectedPhoto) {
+          const base64 = await fileToBase64(selectedPhoto);
+
+          payload.photo_base64 = base64;
+          payload.photo_content_type = selectedPhoto.type;
+        }
+
+        const { data, error } =
+          await supabaseClient.functions.invoke(
+            "cacsf-alumni-correction",
+            {
+              body: payload
+            }
+          );
+
+        if (error || !data || !data.success) {
+          throw new Error(
+            getFunctionError(data, error) ||
+            "Your corrections could not be saved."
+          );
+        }
+
+        showMessage(
+          "correction-message",
+          data.message ||
+          "Your registration details have been corrected successfully.",
+          "success"
+        );
+
+        correctionToken = null;
+        correctionForm.reset();
+
+        if (photoPreviewUrl) {
+          URL.revokeObjectURL(photoPreviewUrl);
+          photoPreviewUrl = null;
+        }
+
+        photoPreview.src = "";
+        photoPreview.classList.add("hidden");
+
+        photoStatusTitle.textContent = "Your profile photo";
+        photoStatusText.textContent =
+          "Your correction has been submitted successfully.";
+
+        button.textContent = "Corrections Saved";
+
+      } catch (error) {
+        console.error("Correction submission error:", error);
+
+        showMessage(
+          "correction-message",
+          error.message ||
+          "Unable to save your corrections. Please try again.",
+          "error"
+        );
+
+        button.disabled = false;
+        button.textContent = "Save Corrections";
+      }
     });
 
-  } else {
-    requestArea.classList.remove("hidden");
-  }
+    // --------------------------------------------------
+    // START PAGE
+    // --------------------------------------------------
 
-})();
-</script>
+    verifyLink();
+  </script>
 
 </body>
 </html>
