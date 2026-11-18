@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +8,6 @@
 
 <title>CACSF Alumni Registration</title>
 
-<!-- CACSF Personal Logo Browser Tab Icon -->
 <link rel="icon" type="image/png" sizes="32x32" href="assets/logoextension.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/logoextension.png">
 
@@ -56,15 +56,36 @@
       </div>
 
       <div class="form-grid">
-        <label><span class="field-label">Title <span class="required-mark">*</span></span>
-          <select name="alias" required>
+        <label>
+          <span class="field-label">Title <span class="required-mark">*</span></span>
+          <select name="alias" id="alumni-title" required>
             <option value="">Select title</option>
-            <option>Mr.</option><option>Mrs.</option><option>Miss</option>
-            <option>Brother</option><option>Sister</option><option>Comrade</option>
-            <option>Chief</option><option>Others</option><option>Dr.</option><option>Engr.</option>
-            <option>Pastor</option><option>Reverend</option><option>Prophet</option>
-            <option>Prof.</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Brother">Brother</option>
+            <option value="Sister">Sister</option>
+            <option value="Comrade">Comrade</option>
+            <option value="Chief">Chief</option>
+            <option value="Dr.">Dr.</option>
+            <option value="Engr.">Engr.</option>
+            <option value="Pastor">Pastor</option>
+            <option value="Reverend">Reverend</option>
+            <option value="Prophet">Prophet</option>
+            <option value="Prof.">Prof.</option>
+            <option value="Others">Others</option>
           </select>
+
+          <input
+            type="text"
+            id="custom-alumni-title"
+            name="custom_alias"
+            placeholder="Enter your title"
+            autocomplete="off"
+            maxlength="60"
+            hidden
+            disabled
+          >
         </label>
 
         <label><span class="field-label">First name <span class="required-mark">*</span></span><input name="first_name" required autocomplete="given-name" placeholder="Enter your first name"></label>
@@ -102,6 +123,7 @@
       <p class="form-status" id="alumni-status" role="status" aria-live="polite"></p>
     </form>
   </section>
+
 <p class="correction-link">
   Already registered but made a mistake?
   <a href="correction.html">Correct My Registration</a>
