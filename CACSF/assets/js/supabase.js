@@ -557,7 +557,7 @@
           email: String(f.get("email") || "").trim().toLowerCase(),
           birth_month: f.get("birth_month"),
           birth_day: Number(f.get("birth_day")),
-          graduation_year: Number(f.get("graduation_year")),
+          graduation_year: String(f.get("graduation_year") || "").trim(),
           phone: String(f.get("phone") || "").trim(),
           profession: f.get("profession") || null,
 
