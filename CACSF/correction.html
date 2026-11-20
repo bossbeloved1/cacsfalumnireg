@@ -13,7 +13,9 @@
   <link rel="stylesheet" href="assets/css/style.css">
 
   <style>
-    .correction-hidden { display: none !important; }
+    .correction-hidden {
+      display: none !important;
+    }
 
     .correction-status {
       min-height: 18px;
@@ -23,8 +25,20 @@
       color: var(--reg-green-dark, #137c3b);
     }
 
-    .correction-status.error { color: #c43d32; }
-    .correction-status.success { color: var(--reg-green-dark, #137c3b); }
+    .correction-status.error {
+      color: #c43d32;
+    }
+
+    .correction-status.success {
+      color: var(--reg-green-dark, #137c3b);
+    }
+
+    /* Keep the main heading on one horizontal line */
+    .registration-intro h1 {
+      white-space: nowrap;
+      font-size: clamp(1.2rem, 5.5vw, 3.4rem);
+      max-width: 100%;
+    }
 
     .otp-input {
       text-align: center;
@@ -92,30 +106,35 @@
       color: var(--reg-text);
     }
 
-    .readonly-field { opacity: .82; }
+    .readonly-field {
+      opacity: .82;
+    }
 
-    /* Back to homepage link */
+    /* Back to Homepage link */
     .correction-home-wrap {
+      width: 100%;
       display: flex;
       justify-content: center;
-      padding: 0 20px 35px;
-      margin-top: -5px;
+      margin: 25px 0 35px;
     }
 
     .correction-home-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      min-height: 46px;
-      padding: 11px 20px;
+      gap: 10px;
+      min-width: 190px;
+      padding: 13px 22px;
       border: 1px solid var(--reg-line, #dce9dc);
-      border-radius: 9px;
-      background: var(--reg-bg, rgba(255,255,255,.8));
+      border-radius: 8px;
+      background: var(--reg-surface, #ffffff);
       color: var(--reg-text, #102d20);
       text-decoration: none;
-      transition: border-color .25s ease, transform .25s ease,
-                  background .25s ease, color .25s ease;
+      font-family: Manrope, sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      transition: .25s ease;
     }
 
     .correction-home-link:hover {
@@ -123,50 +142,31 @@
       transform: translateY(-2px);
     }
 
-    .correction-home-link .home-arrow {
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .correction-home-link code {
-      font-family: "DM Mono", monospace;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .02em;
-      color: inherit;
-    }
-
-    .correction-home-link:focus-visible {
-      outline: 2px solid var(--reg-green-dark, #137c3b);
-      outline-offset: 4px;
+    .correction-home-link span {
+      font-size: 17px;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- HEADER -->
   <header class="register-header">
     <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship homepage">
       <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
       <span>CACSF <small>ALUMNI FELLOWSHIP</small></span>
     </a>
 
-    <button class="theme-toggle" type="button"
-      aria-label="Toggle light and dark mode"
-      title="Toggle theme">☾</button>
+    <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
   </header>
 
   <main class="registration-main">
 
     <section class="registration-intro" aria-labelledby="correction-title">
       <div class="intro-kicker">
-        <span class="kicker-dot"></span>
-        CACSF ALUMNI FELLOWSHIP
+        <span class="kicker-dot"></span> CACSF ALUMNI FELLOWSHIP
       </div>
 
       <h1 id="correction-title">Correct your <em>details.</em></h1>
-      <h2>Your story is part of <em>our story.</em></h2>
 
       <p class="intro-support">
         Make sure your alumni information is accurate and up to date.
@@ -175,16 +175,13 @@
       <div class="instruction-card">
         <span class="instruction-icon" aria-hidden="true">✦</span>
         <p>
-          Enter the email address you used during registration.
-          We will send a six-digit verification code to that email.
-          The code expires after 10 minutes.
+          Enter the email address you used during registration. We will send a six-digit verification code to that email. The code expires after 10 minutes.
         </p>
       </div>
     </section>
 
     <!-- STEP 1: REQUEST EMAIL OTP -->
-    <section class="registration-form-wrap" id="request-section"
-      aria-label="Request email verification code">
+    <section class="registration-form-wrap" id="request-section" aria-label="Request email verification code">
 
       <form id="request-form" class="site-form registration-form">
 
@@ -199,25 +196,29 @@
             <span class="field-label">
               Registered email address <span class="required-mark">*</span>
             </span>
-            <input type="email" id="request-email" name="email"
-              required autocomplete="email"
-              placeholder="Enter your registered email">
+
+            <input
+              type="email"
+              id="request-email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="Enter your registered email"
+            >
           </label>
         </div>
 
-        <button class="btn btn-primary registration-submit"
-          id="request-button" type="submit">
+        <button class="btn btn-primary registration-submit" id="request-button" type="submit">
           SEND VERIFICATION CODE <span aria-hidden="true">↗</span>
         </button>
 
-        <p class="correction-status" id="request-status"
-          role="status" aria-live="polite"></p>
+        <p class="correction-status" id="request-status" role="status" aria-live="polite"></p>
+
       </form>
     </section>
 
     <!-- STEP 2: VERIFY EMAIL OTP -->
-    <section class="registration-form-wrap correction-hidden"
-      id="otp-section" aria-label="Verify email code">
+    <section class="registration-form-wrap correction-hidden" id="otp-section" aria-label="Verify email code">
 
       <form id="otp-form" class="site-form registration-form">
 
@@ -235,54 +236,51 @@
               Six-digit verification code <span class="required-mark">*</span>
             </span>
 
-            <input class="otp-input" type="text" id="otp-code"
-              name="otp" inputmode="numeric"
+            <input
+              class="otp-input"
+              type="text"
+              id="otp-code"
+              name="otp"
+              inputmode="numeric"
               autocomplete="one-time-code"
-              pattern="[0-9]{6}" minlength="6" maxlength="6"
-              required placeholder="000000"
-              aria-label="Six-digit verification code">
+              pattern="[0-9]{6}"
+              minlength="6"
+              maxlength="6"
+              required
+              placeholder="000000"
+              aria-label="Six-digit verification code"
+            >
 
-            <small>
-              Check your inbox and spam folder.
-              The code is valid for 10 minutes.
-            </small>
+            <small>Check your inbox and spam folder. The code is valid for 10 minutes.</small>
           </label>
         </div>
 
-        <button class="btn btn-primary registration-submit"
-          id="verify-otp-button" type="submit">
+        <button class="btn btn-primary registration-submit" id="verify-otp-button" type="submit">
           VERIFY CODE <span aria-hidden="true">↗</span>
         </button>
 
-        <button class="correction-secondary-button"
-          id="resend-otp-button" type="button">
+        <button class="correction-secondary-button" id="resend-otp-button" type="button">
           Resend verification code
         </button>
 
-        <button class="correction-secondary-button"
-          id="change-email-button" type="button">
+        <button class="correction-secondary-button" id="change-email-button" type="button">
           Use a different email address
         </button>
 
-        <p class="correction-status" id="otp-status"
-          role="status" aria-live="polite"></p>
+        <p class="correction-status" id="otp-status" role="status" aria-live="polite"></p>
+
       </form>
     </section>
 
     <!-- STEP 3: CORRECTION FORM -->
-    <section class="registration-form-wrap correction-hidden"
-      id="correction-section"
-      aria-label="Correct alumni registration details">
+    <section class="registration-form-wrap correction-hidden" id="correction-section" aria-label="Correct alumni registration details">
 
       <form id="correction-form" class="site-form registration-form">
 
         <div class="form-heading">
           <span class="form-step">STEP 03 · UPDATE YOUR DETAILS</span>
           <h3>Tell us about yourself</h3>
-          <p>
-            Review your details carefully.
-            Fields marked with <b>*</b> are required.
-          </p>
+          <p>Review your details carefully. Fields marked with <b>*</b> are required.</p>
         </div>
 
         <div class="form-grid">
@@ -311,9 +309,16 @@
               <option value="Others">Others</option>
             </select>
 
-            <input type="text" id="custom-alumni-title"
-              name="custom_alias" placeholder="Enter your title"
-              autocomplete="off" maxlength="60" hidden disabled>
+            <input
+              type="text"
+              id="custom-alumni-title"
+              name="custom_alias"
+              placeholder="Enter your title"
+              autocomplete="off"
+              maxlength="60"
+              hidden
+              disabled
+            >
           </label>
 
           <!-- GRADUATION YEAR -->
@@ -321,6 +326,7 @@
             <span class="field-label">
               Graduation year <span class="required-mark">*</span>
             </span>
+
             <select name="graduation_year" id="graduation-year" required>
               <option value="">Select year</option>
             </select>
@@ -331,9 +337,15 @@
             <span class="field-label">
               First name <span class="required-mark">*</span>
             </span>
-            <input type="text" id="first-name" name="first_name"
-              required autocomplete="given-name"
-              placeholder="Enter your first name">
+
+            <input
+              type="text"
+              id="first-name"
+              name="first_name"
+              required
+              autocomplete="given-name"
+              placeholder="Enter your first name"
+            >
           </label>
 
           <!-- SURNAME -->
@@ -341,20 +353,32 @@
             <span class="field-label">
               Surname <span class="required-mark">*</span>
             </span>
-            <input type="text" id="surname" name="surname"
-              required autocomplete="family-name"
-              placeholder="Enter your surname">
+
+            <input
+              type="text"
+              id="surname"
+              name="surname"
+              required
+              autocomplete="family-name"
+              placeholder="Enter your surname"
+            >
           </label>
 
           <!-- EMAIL -->
           <label>
             <span class="field-label">Email address</span>
-            <input class="readonly-field" type="email"
-              id="email" name="email" readonly
-              aria-readonly="true">
+
+            <input
+              class="readonly-field"
+              type="email"
+              id="email"
+              name="email"
+              readonly
+              aria-readonly="true"
+            >
           </label>
 
-          <!-- BIRTH MONTH -->
+          <!-- BIRTHDAY MONTH -->
           <label>
             <span class="field-label">
               Birthday month <span class="required-mark">*</span>
@@ -377,11 +401,12 @@
             </select>
           </label>
 
-          <!-- BIRTH DAY -->
+          <!-- BIRTHDAY DAY -->
           <label>
             <span class="field-label">
               Birthday day <span class="required-mark">*</span>
             </span>
+
             <select id="birth-day" name="birth_day" required>
               <option value="">Select day</option>
             </select>
@@ -392,62 +417,74 @@
             <span class="field-label">
               Phone number <span class="required-mark">*</span>
             </span>
-            <input type="tel" id="phone" name="phone"
-              required autocomplete="tel"
-              placeholder="Enter your phone number">
+
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              required
+              autocomplete="tel"
+              placeholder="Enter your phone number"
+            >
           </label>
 
           <!-- PROFILE PHOTO -->
           <label class="full">
             <span class="field-label">Profile photograph</span>
 
-            <div class="instruction-card"
-              style="margin:0;display:block">
+            <div class="instruction-card" style="margin:0;display:block">
 
               <div class="correction-photo-row">
-                <img id="photo-preview"
+                <img
+                  id="photo-preview"
                   class="correction-photo-preview correction-hidden"
-                  src="" alt="Profile photograph preview">
+                  src=""
+                  alt="Profile photograph preview"
+                >
 
                 <div class="correction-photo-copy">
-                  <strong id="photo-status-title">
-                    Your current profile photo
-                  </strong>
+                  <strong id="photo-status-title">Your current profile photo</strong>
                   <span id="photo-status-text">
                     Choose another image below if you want to replace it.
                   </span>
                 </div>
               </div>
 
-              <input type="file" id="profile-photo" name="photo"
-                accept="image/jpeg,image/png,image/gif">
+              <input
+                type="file"
+                id="profile-photo"
+                name="photo"
+                accept="image/jpeg,image/png,image/gif"
+              >
 
               <small class="current-photo-note">
-                JPG, JPEG, PNG or GIF · Maximum file size 5MB.
-                Leave this field empty to keep your existing photograph.
+                JPG, JPEG, PNG or GIF · Maximum file size 5MB. Leave this field empty to keep your existing photograph.
               </small>
+
             </div>
           </label>
 
           <!-- PROFESSION -->
           <label class="full">
             <span class="field-label">
-              Profession / Occupation
-              <small class="optional-label">Optional</small>
+              Profession / Occupation <small class="optional-label">Optional</small>
             </span>
-            <input type="text" id="profession" name="profession"
-              placeholder="e.g. Engineer, Teacher, Entrepreneur">
+
+            <input
+              type="text"
+              id="profession"
+              name="profession"
+              placeholder="e.g. Engineer, Teacher, Entrepreneur"
+            >
           </label>
 
         </div>
 
-        <button class="btn btn-primary registration-submit"
-          id="update-button" type="submit">
+        <button class="btn btn-primary registration-submit" id="update-button" type="submit">
           SAVE CORRECTIONS <span aria-hidden="true">↗</span>
         </button>
 
-        <p class="correction-status" id="correction-status"
-          role="status" aria-live="polite"></p>
+        <p class="correction-status" id="correction-status" role="status" aria-live="polite"></p>
 
       </form>
     </section>
@@ -457,16 +494,15 @@
       <span>CACSF..... LIBERATION FAMILY</span>
     </div>
 
-  </main>
+    <!-- BACK TO HOMEPAGE -->
+    <div class="correction-home-wrap">
+      <a href="index.html" class="correction-home-link">
+        <span aria-hidden="true">←</span>
+        Back to Homepage
+      </a>
+    </div>
 
-  <!-- BACK TO HOMEPAGE -->
-  <div class="correction-home-wrap">
-    <a class="correction-home-link" href="index.html"
-      aria-label="Return to CACSF Alumni Fellowship homepage">
-      <span class="home-arrow" aria-hidden="true">←</span>
-      <code>Back to Homepage</code>
-    </a>
-  </div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/config.js"></script>
@@ -479,11 +515,7 @@
 
       const FUNCTION_NAME = "cacsf-alumni-correction";
       const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-      const ALLOWED_PHOTO_TYPES = [
-        "image/jpeg",
-        "image/png",
-        "image/gif"
-      ];
+      const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
       const requestSection = document.getElementById("request-section");
       const otpSection = document.getElementById("otp-section");
@@ -513,14 +545,8 @@
       let photoPreviewUrl = "";
 
       function getSupabaseClient() {
-        if (
-          !window.cacsfSupabaseReady ||
-          !window.cacsf ||
-          !window.cacsf.supabase
-        ) {
-          throw new Error(
-            "Connection error. Please refresh the page and try again."
-          );
+        if (!window.cacsfSupabaseReady || !window.cacsf || !window.cacsf.supabase) {
+          throw new Error("Connection error. Please refresh the page and try again.");
         }
 
         return window.cacsf.supabase;
@@ -529,8 +555,7 @@
       function setStatus(id, message, type = "") {
         const element = document.getElementById(id);
         element.textContent = message || "";
-        element.className =
-          "correction-status" + (type ? " " + type : "");
+        element.className = "correction-status" + (type ? " " + type : "");
       }
 
       function setButtonBusy(button, busy, busyText, normalText) {
@@ -539,15 +564,8 @@
       }
 
       function showSection(sectionToShow) {
-        [
-          requestSection,
-          otpSection,
-          correctionSection
-        ].forEach(section => {
-          section.classList.toggle(
-            "correction-hidden",
-            section !== sectionToShow
-          );
+        [requestSection, otpSection, correctionSection].forEach(section => {
+          section.classList.toggle("correction-hidden", section !== sectionToShow);
         });
       }
 
@@ -560,8 +578,7 @@
       }
 
       function setCustomTitleFromSavedValue(savedTitle) {
-        const knownTitles = Array.from(titleSelect.options)
-          .map(option => option.value);
+        const knownTitles = Array.from(titleSelect.options).map(option => option.value);
 
         if (knownTitles.includes(savedTitle) && savedTitle !== "Others") {
           titleSelect.value = savedTitle;
@@ -589,51 +606,37 @@
       function fillCorrectionForm(alumni) {
         setCustomTitleFromSavedValue(String(alumni.alias || ""));
 
-        document.getElementById("first-name").value =
-          alumni.first_name || "";
-
-        document.getElementById("surname").value =
-          alumni.surname || "";
-
-        document.getElementById("email").value =
-          alumni.email || registeredEmail;
+        document.getElementById("first-name").value = alumni.first_name || "";
+        document.getElementById("surname").value = alumni.surname || "";
+        document.getElementById("email").value = alumni.email || registeredEmail;
 
         birthMonth.value = alumni.birth_month || "";
+        birthDay.value = alumni.birth_day == null ? "" : String(alumni.birth_day);
 
-        birthDay.value =
-          alumni.birth_day == null ? "" : String(alumni.birth_day);
+        const savedGraduationYear = String(alumni.graduation_year || "").trim();
 
-        const savedGraduationYear =
-          String(alumni.graduation_year || "").trim();
-
-        // Convert legacy year values into academic sessions for display.
+        // Older records may contain only the first year.
+        // Convert that legacy value to the matching academic session.
         const normalizedGraduationYear = /^\d{4}$/.test(savedGraduationYear)
           ? `${savedGraduationYear}/${Number(savedGraduationYear) + 1}`
           : savedGraduationYear;
 
         graduationYear.value = normalizedGraduationYear;
 
-        document.getElementById("phone").value =
-          alumni.phone || "";
-
-        document.getElementById("profession").value =
-          alumni.profession || "";
+        document.getElementById("phone").value = alumni.phone || "";
+        document.getElementById("profession").value = alumni.profession || "";
 
         if (alumni.photo_url) {
           photoPreview.src = alumni.photo_url;
           photoPreview.classList.remove("correction-hidden");
-
           photoStatusTitle.textContent = "Current profile photo";
-          photoStatusText.textContent =
-            "Choose another image below if you want to replace it.";
+          photoStatusText.textContent = "Choose another image below if you want to replace it.";
 
         } else {
           photoPreview.removeAttribute("src");
           photoPreview.classList.add("correction-hidden");
-
           photoStatusTitle.textContent = "No profile photo available";
-          photoStatusText.textContent =
-            "Choose an image below if you want to add a profile photo.";
+          photoStatusText.textContent = "Choose an image below if you want to add a profile photo.";
         }
       }
 
@@ -677,18 +680,14 @@
 
           reader.onload = () => {
             if (typeof reader.result !== "string") {
-              reject(
-                new Error("Unable to read the selected photograph.")
-              );
+              reject(new Error("Unable to read the selected photograph."));
               return;
             }
 
             const base64 = reader.result.split(",")[1];
 
             if (!base64) {
-              reject(
-                new Error("Unable to process the selected photograph.")
-              );
+              reject(new Error("Unable to process the selected photograph."));
               return;
             }
 
@@ -696,9 +695,7 @@
           };
 
           reader.onerror = () => {
-            reject(
-              new Error("Unable to read the selected photograph.")
-            );
+            reject(new Error("Unable to read the selected photograph."));
           };
 
           reader.readAsDataURL(file);
@@ -710,44 +707,27 @@
 
         if (!email) {
           showSection(requestSection);
-
-          setStatus(
-            "request-status",
-            "Enter your registered email address first.",
-            "error"
-          );
-
+          setStatus("request-status", "Enter your registered email address first.", "error");
           return;
         }
 
         const button = document.getElementById("resend-otp-button");
 
-        setButtonBusy(
-          button,
-          true,
-          "Sending...",
-          "Resend verification code"
-        );
-
-        setStatus(
-          "otp-status",
-          "Requesting a new verification code..."
-        );
+        setButtonBusy(button, true, "Sending...", "Resend verification code");
+        setStatus("otp-status", "Requesting a new verification code...");
 
         try {
-          const { data, error } =
-            await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
-              body: {
-                action: "request",
-                email
-              }
-            });
+          const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
+            body: {
+              action: "request",
+              email
+            }
+          });
 
           if (data && data.code === "RECENT_REQUEST") {
             setStatus(
               "otp-status",
-              data.message ||
-                "A code was sent recently. Please wait one minute before requesting another.",
+              data.message || "A code was sent recently. Please wait one minute before requesting another.",
               "error"
             );
 
@@ -760,8 +740,7 @@
 
           setStatus(
             "otp-status",
-            data.message ||
-              "A new verification code has been sent to your email.",
+            data.message || "A new verification code has been sent to your email.",
             "success"
           );
 
@@ -770,21 +749,16 @@
 
           setStatus(
             "otp-status",
-            error.message ||
-              "Unable to resend the code. Please try again.",
+            error.message || "Unable to resend the code. Please try again.",
             "error"
           );
 
         } finally {
-          setButtonBusy(
-            button,
-            false,
-            "Sending...",
-            "Resend verification code"
-          );
+          setButtonBusy(button, false, "Sending...", "Resend verification code");
         }
       }
 
+      // REQUEST VERIFICATION CODE
       requestForm.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -796,33 +770,25 @@
 
         const button = document.getElementById("request-button");
 
-        setButtonBusy(
-          button,
-          true,
-          "Sending code...",
-          "SEND VERIFICATION CODE ↗"
-        );
+        setButtonBusy(button, true, "Sending code...", "SEND VERIFICATION CODE ↗");
 
         try {
-          const { data, error } =
-            await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
-              body: {
-                action: "request",
-                email: registeredEmail
-              }
-            });
+          const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
+            body: {
+              action: "request",
+              email: registeredEmail
+            }
+          });
 
           if (data && data.code === "RECENT_REQUEST") {
             showSection(otpSection);
 
             document.getElementById("otp-destination").textContent =
-              data.message ||
-              "A code was sent recently. Check your inbox or wait one minute before requesting another.";
+              data.message || "A code was sent recently. Check your inbox or wait one minute before requesting another.";
 
             setStatus(
               "otp-status",
-              data.message ||
-                "A code was sent recently. Please check your inbox.",
+              data.message || "A code was sent recently. Please check your inbox.",
               "error"
             );
 
@@ -842,8 +808,7 @@
 
           setStatus(
             "otp-status",
-            data.message ||
-              "Your verification code has been sent. Please check your inbox and spam folder.",
+            data.message || "Your verification code has been sent. Please check your inbox and spam folder.",
             "success"
           );
 
@@ -854,21 +819,16 @@
 
           setStatus(
             "request-status",
-            error.message ||
-              "Unable to send a verification code. Please try again.",
+            error.message || "Unable to send a verification code. Please try again.",
             "error"
           );
 
         } finally {
-          setButtonBusy(
-            button,
-            false,
-            "Sending code...",
-            "SEND VERIFICATION CODE ↗"
-          );
+          setButtonBusy(button, false, "Sending code...", "SEND VERIFICATION CODE ↗");
         }
       });
 
+      // VERIFY EMAIL OTP
       otpForm.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -879,45 +839,25 @@
         const code = otpCode.value.trim();
 
         if (!/^\d{6}$/.test(code)) {
-          setStatus(
-            "otp-status",
-            "Enter the six-digit code from your email.",
-            "error"
-          );
-
+          setStatus("otp-status", "Enter the six-digit code from your email.", "error");
           return;
         }
 
         const button = document.getElementById("verify-otp-button");
 
-        setButtonBusy(
-          button,
-          true,
-          "Verifying...",
-          "VERIFY CODE ↗"
-        );
+        setButtonBusy(button, true, "Verifying...", "VERIFY CODE ↗");
 
         try {
-          const { data, error } =
-            await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
-              body: {
-                action: "verify_otp",
-                email: registeredEmail,
-                otp: code
-              }
-            });
+          const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, {
+            body: {
+              action: "verify_otp",
+              email: registeredEmail,
+              otp: code
+            }
+          });
 
-          if (
-            error ||
-            !data ||
-            !data.success ||
-            !data.session_token ||
-            !data.alumni
-          ) {
-            throw new Error(
-              getFunctionError(data, error) ||
-              "The code is invalid or has expired."
-            );
+          if (error || !data || !data.success || !data.session_token || !data.alumni) {
+            throw new Error(getFunctionError(data, error) || "The code is invalid or has expired.");
           }
 
           correctionSessionToken = data.session_token;
@@ -937,64 +877,47 @@
 
           setStatus(
             "otp-status",
-            error.message ||
-              "The code could not be verified. Please try again.",
+            error.message || "The code could not be verified. Please try again.",
             "error"
           );
 
           otpCode.select();
 
         } finally {
-          setButtonBusy(
-            button,
-            false,
-            "Verifying...",
-            "VERIFY CODE ↗"
-          );
+          setButtonBusy(button, false, "Verifying...", "VERIFY CODE ↗");
         }
       });
 
-      document.getElementById("resend-otp-button")
-        .addEventListener("click", requestOtp);
+      // RESEND OTP
+      document.getElementById("resend-otp-button").addEventListener("click", requestOtp);
 
-      document.getElementById("change-email-button")
-        .addEventListener("click", () => {
-          setStatus("request-status", "");
-          setStatus("otp-status", "");
+      // CHANGE EMAIL
+      document.getElementById("change-email-button").addEventListener("click", () => {
+        setStatus("request-status", "");
+        setStatus("otp-status", "");
 
-          showSection(requestSection);
+        showSection(requestSection);
 
-          requestEmail.value = registeredEmail;
-          requestEmail.focus();
-        });
+        requestEmail.value = registeredEmail;
+        requestEmail.focus();
+      });
 
+      // PROFILE PHOTO PREVIEW AND VALIDATION
       profilePhotoInput.addEventListener("change", () => {
         setStatus("correction-status", "");
 
-        const file =
-          profilePhotoInput.files &&
-          profilePhotoInput.files[0];
+        const file = profilePhotoInput.files && profilePhotoInput.files[0];
 
         if (!file) return;
 
         if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-          setStatus(
-            "correction-status",
-            "Please select a JPG, PNG or GIF image.",
-            "error"
-          );
-
+          setStatus("correction-status", "Please select a JPG, PNG or GIF image.", "error");
           profilePhotoInput.value = "";
           return;
         }
 
         if (file.size > MAX_PHOTO_BYTES) {
-          setStatus(
-            "correction-status",
-            "Your profile photo must not exceed 5MB.",
-            "error"
-          );
-
+          setStatus("correction-status", "Your profile photo must not exceed 5MB.", "error");
           profilePhotoInput.value = "";
           return;
         }
@@ -1004,22 +927,20 @@
         }
 
         photoPreviewUrl = URL.createObjectURL(file);
-        photoPreview.src = photoPreviewUrl;
 
+        photoPreview.src = photoPreviewUrl;
         photoPreview.classList.remove("correction-hidden");
 
         photoStatusTitle.textContent = "New photo selected";
 
         photoStatusText.textContent =
-          file.name +
-          " — " +
-          (file.size / (1024 * 1024)).toFixed(2) +
-          "MB";
+          file.name + " — " + (file.size / (1024 * 1024)).toFixed(2) + "MB";
       });
 
       birthMonth.addEventListener("change", validateBirthday);
       birthDay.addEventListener("change", validateBirthday);
 
+      // SAVE CORRECTIONS
       correctionForm.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -1035,74 +956,51 @@
           return;
         }
 
-        if (!correctionForm.reportValidity() || !validateBirthday()) {
-          return;
-        }
+        if (!correctionForm.reportValidity() || !validateBirthday()) return;
 
-        const selectedPhoto =
-          profilePhotoInput.files &&
-          profilePhotoInput.files[0];
+        const selectedPhoto = profilePhotoInput.files && profilePhotoInput.files[0];
 
-        if (
-          selectedPhoto &&
-          !ALLOWED_PHOTO_TYPES.includes(selectedPhoto.type)
-        ) {
-          setStatus(
-            "correction-status",
-            "Please select a JPG, PNG or GIF image.",
-            "error"
-          );
-
+        if (selectedPhoto && !ALLOWED_PHOTO_TYPES.includes(selectedPhoto.type)) {
+          setStatus("correction-status", "Please select a JPG, PNG or GIF image.", "error");
           return;
         }
 
         if (selectedPhoto && selectedPhoto.size > MAX_PHOTO_BYTES) {
-          setStatus(
-            "correction-status",
-            "Your profile photo must not exceed 5MB.",
-            "error"
-          );
-
+          setStatus("correction-status", "Your profile photo must not exceed 5MB.", "error");
           return;
         }
 
         const selectedTitle = titleSelect.value.trim();
         const customTitle = customTitleInput.value.trim();
 
-        const finalTitle =
-          selectedTitle === "Others"
-            ? customTitle
-            : selectedTitle;
+        const finalTitle = selectedTitle === "Others"
+          ? customTitle
+          : selectedTitle;
 
         if (!finalTitle) {
-          setStatus(
-            "correction-status",
-            "Please select or enter your title.",
-            "error"
-          );
-
+          setStatus("correction-status", "Please select or enter your title.", "error");
           return;
         }
 
         const button = document.getElementById("update-button");
 
-        setButtonBusy(
-          button,
-          true,
-          "Saving corrections...",
-          "SAVE CORRECTIONS ↗"
-        );
+        setButtonBusy(button, true, "Saving corrections...", "SAVE CORRECTIONS ↗");
 
         try {
           const payload = {
             action: "update",
             token: correctionSessionToken,
+
             alias: finalTitle,
+
             first_name: document.getElementById("first-name").value.trim(),
             surname: document.getElementById("surname").value.trim(),
+
             birth_month: birthMonth.value,
             birth_day: Number(birthDay.value),
+
             graduation_year: String(graduationYear.value).trim(),
+
             phone: document.getElementById("phone").value.trim(),
             profession: document.getElementById("profession").value.trim()
           };
@@ -1112,25 +1010,20 @@
             payload.photo_content_type = selectedPhoto.type;
           }
 
-          const { data, error } =
-            await getSupabaseClient().functions.invoke(
-              FUNCTION_NAME,
-              { body: payload }
-            );
+          const { data, error } = await getSupabaseClient().functions.invoke(
+            FUNCTION_NAME,
+            { body: payload }
+          );
 
           if (error || !data || !data.success) {
-            throw new Error(
-              getFunctionError(data, error) ||
-              "Your corrections could not be saved."
-            );
+            throw new Error(getFunctionError(data, error) || "Your corrections could not be saved.");
           }
 
           correctionSessionToken = "";
 
           setStatus(
             "correction-status",
-            data.message ||
-              "Your registration details have been corrected successfully.",
+            data.message || "Your registration details have been corrected successfully.",
             "success"
           );
 
@@ -1147,8 +1040,7 @@
 
           setStatus(
             "correction-status",
-            error.message ||
-              "Unable to save your corrections. Please try again.",
+            error.message || "Unable to save your corrections. Please try again.",
             "error"
           );
 
