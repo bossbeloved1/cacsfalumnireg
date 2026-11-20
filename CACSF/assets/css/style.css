@@ -933,3 +933,6 @@ body:has(.registration-main) .registration-form{
   color: #ffdc45;
 }
 /* Dark mode keeps the existing correction notice colors. */
+#graduation-label {
+  font-weight: 900 !important;
+}
