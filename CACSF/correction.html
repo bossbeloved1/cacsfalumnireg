@@ -45,27 +45,46 @@
     .current-photo-note { display: block; margin-top: 7px; color: var(--reg-muted); font-size: 10px; line-height: 1.6; }
     .correction-photo-picker {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 18px;
       flex-wrap: wrap;
       margin-bottom: 14px;
-      cursor: pointer;
     }
     .correction-photo-preview {
       display: block;
-      width: 180px;
-      height: 180px;
-      max-width: 100%;
-      border-radius: 8px;
+      width: auto;
+      height: auto;
+      max-width: min(100%, 420px);
+      max-height: 420px;
       object-fit: contain;
       object-position: center;
-      border: 2px solid var(--reg-green-dark, #137c3b);
-      background: var(--reg-bg, #f2f8f1);
-      cursor: pointer;
+      border-radius: 8px;
+      border: 1px solid var(--reg-line, #dce9dc);
+      background: transparent;
+      cursor: zoom-in;
     }
     .correction-photo-copy { min-width: 180px; flex: 1; color: var(--reg-muted); font-size: 11px; line-height: 1.7; }
     .correction-photo-copy strong { display: block; margin-bottom: 5px; color: var(--reg-text); }
-    .photo-click-note { display: block; margin-top: 8px; font-weight: 800; color: var(--reg-green-dark, #137c3b); }
+    .photo-choose-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      margin-top: 12px;
+      padding: 10px 16px;
+      border: 1px solid var(--reg-green-dark, #137c3b);
+      border-radius: 8px;
+      background: var(--reg-green-dark, #137c3b);
+      color: #fff;
+      font: 700 11px Manrope, sans-serif;
+      cursor: pointer;
+    }
+    .photo-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .photo-preview-hint { display: block; margin-top: 8px; color: var(--reg-muted); font-size: 10px; }
+    .photo-lightbox { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.88); }
+    .photo-lightbox[hidden] { display: none !important; }
+    .photo-lightbox img { display: block; max-width: 95vw; max-height: 88vh; width: auto; height: auto; object-fit: contain; border-radius: 6px; }
+    .photo-lightbox-close { position: absolute; top: 18px; right: 22px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; font-size: 26px; cursor: pointer; }
     .readonly-field { opacity: .82; }
 
     .registration-intro h1 {
@@ -249,18 +268,22 @@
           </label>
 
           <div class="full">
-            <label class="field-label" for="profile-photo">Birthday Picture</label>
+            <span class="field-label">Birthday Picture</span>
             <div class="instruction-card" style="margin:0;display:block">
-              <label for="profile-photo" class="correction-photo-picker">
-                <img id="photo-preview" class="correction-photo-preview correction-hidden" src="" alt="Birthday picture preview">
+              <div class="correction-photo-picker">
+                <button type="button" id="photo-preview-button" class="correction-hidden" style="display:block;padding:0;border:0;background:transparent;max-width:100%;" aria-label="Preview birthday picture">
+                  <img id="photo-preview" class="correction-photo-preview correction-hidden" src="" alt="Birthday picture preview">
+                </button>
                 <div class="correction-photo-copy">
                   <strong id="photo-status-title">Your birthday picture</strong>
-                  <span id="photo-status-text">Click here to choose your birthday picture.</span>
-                  <span class="photo-click-note">Click to select or change picture</span>
+                  <span id="photo-status-text">Choose the picture you want us to use for your birthday design.</span>
+                  <br>
+                  <button type="button" class="photo-choose-button" id="choose-photo-button">Choose Another File</button>
+                  <span class="photo-preview-hint">After selecting a picture, click its preview to view it larger on this page.</span>
                 </div>
-              </label>
-              <input type="file" id="profile-photo" name="photo" accept="image/jpeg,image/png,image/gif">
-              <small class="current-photo-note">JPG, JPEG, PNG or GIF · Maximum file size 5MB. Leave this field empty to keep your existing picture.</small>
+              </div>
+              <input class="photo-file-input" type="file" id="profile-photo" name="photo" accept="image/jpeg,image/png,image/gif" aria-label="Choose birthday picture">
+              <small class="current-photo-note">JPG, JPEG, PNG or GIF · Maximum file size 20MB. Leave this field empty to keep your existing picture.</small>
             </div>
           </div>
 
@@ -283,6 +306,11 @@
     </div>
   </main>
 
+  <div class="photo-lightbox" id="photo-lightbox" role="dialog" aria-modal="true" aria-label="Birthday picture preview" hidden>
+    <button type="button" class="photo-lightbox-close" id="close-photo-lightbox" aria-label="Close picture preview">×</button>
+    <img id="photo-lightbox-image" src="" alt="Enlarged birthday picture">
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/main.js"></script>
@@ -293,7 +321,7 @@
       "use strict";
 
       const FUNCTION_NAME = "cacsf-alumni-correction";
-      const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+      const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
       const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
       const requestSection = document.getElementById("request-section");
@@ -313,6 +341,11 @@
       const photoPreview = document.getElementById("photo-preview");
       const photoStatusTitle = document.getElementById("photo-status-title");
       const photoStatusText = document.getElementById("photo-status-text");
+      const choosePhotoButton = document.getElementById("choose-photo-button");
+      const photoPreviewButton = document.getElementById("photo-preview-button");
+      const photoLightbox = document.getElementById("photo-lightbox");
+      const photoLightboxImage = document.getElementById("photo-lightbox-image");
+      const closePhotoLightboxButton = document.getElementById("close-photo-lightbox");
 
       let registeredEmail = "";
       let correctionSessionToken = "";
@@ -392,11 +425,13 @@
         if (alumni.photo_url) {
           photoPreview.src = alumni.photo_url;
           photoPreview.classList.remove("correction-hidden");
+          photoPreviewButton.classList.remove("correction-hidden");
           photoStatusTitle.textContent = "Current birthday picture";
           photoStatusText.textContent = "Choose another image below if you want to replace it.";
         } else {
           photoPreview.removeAttribute("src");
           photoPreview.classList.add("correction-hidden");
+          photoPreviewButton.classList.add("correction-hidden");
           photoStatusTitle.textContent = "No birthday picture available";
           photoStatusText.textContent = "Choose an image below if you want to add a birthday picture.";
         }
@@ -560,6 +595,30 @@
         requestEmail.focus();
       });
 
+      choosePhotoButton.addEventListener("click", () => profilePhotoInput.click());
+
+      function openPhotoPreview() {
+        if (!photoPreview.src || photoPreview.classList.contains("correction-hidden")) return;
+        photoLightboxImage.src = photoPreview.src;
+        photoLightbox.hidden = false;
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePhotoPreview() {
+        photoLightbox.hidden = true;
+        photoLightboxImage.removeAttribute("src");
+        document.body.style.overflow = "";
+      }
+
+      photoPreviewButton.addEventListener("click", openPhotoPreview);
+      closePhotoLightboxButton.addEventListener("click", closePhotoPreview);
+      photoLightbox.addEventListener("click", event => {
+        if (event.target === photoLightbox) closePhotoPreview();
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !photoLightbox.hidden) closePhotoPreview();
+      });
+
       profilePhotoInput.addEventListener("change", () => {
         setStatus("correction-status", "");
         const file = profilePhotoInput.files && profilePhotoInput.files[0];
@@ -571,7 +630,7 @@
           return;
         }
         if (file.size > MAX_PHOTO_BYTES) {
-          setStatus("correction-status", "Your birthday picture must not exceed 5MB.", "error");
+          setStatus("correction-status", "Your birthday picture must not exceed 20MB.", "error");
           profilePhotoInput.value = "";
           return;
         }
@@ -580,6 +639,7 @@
         photoPreviewUrl = URL.createObjectURL(file);
         photoPreview.src = photoPreviewUrl;
         photoPreview.classList.remove("correction-hidden");
+        photoPreviewButton.classList.remove("correction-hidden");
         photoStatusTitle.textContent = "New birthday picture selected";
         photoStatusText.textContent = file.name + " — " + (file.size / (1024 * 1024)).toFixed(2) + "MB";
       });
@@ -603,7 +663,7 @@
           return;
         }
         if (selectedPhoto && selectedPhoto.size > MAX_PHOTO_BYTES) {
-          setStatus("correction-status", "Your birthday picture must not exceed 5MB.", "error");
+          setStatus("correction-status", "Your birthday picture must not exceed 20MB.", "error");
           return;
         }
 
