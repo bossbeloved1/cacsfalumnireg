@@ -341,10 +341,8 @@
 
     document.body.appendChild(overlay);
 
-    // Detect small screens for mobile animation timing.
     const isSmallScreen = window.matchMedia("(max-width: 560px)").matches;
 
-    // Add falling confetti.
     const confettiColors = [
       "#35e45c",
       "#b6ed43",
@@ -377,7 +375,6 @@
       overlay.appendChild(piece);
     }
 
-    // Add decorative sparkles.
     for (let i = 0; i < 18; i++) {
       const sparkle = document.createElement("span");
       sparkle.className = "sparkle";
@@ -455,7 +452,6 @@
       const f = new FormData(alumniForm);
       const file = f.get("photo");
 
-      // Resolve the actual title before saving.
       const selectedTitle = String(f.get("alias") || "").trim();
       const customTitle = String(f.get("custom_alias") || "").trim();
 
@@ -473,9 +469,9 @@
         return;
       }
 
-      if (!file || file.size === 0 || file.size > 10 * 1024 * 1024) {
+      if (!file || file.size === 0 || file.size > 20 * 1024 * 1024) {
         status.textContent =
-          "Please choose an image no larger than 10MB.";
+          "Please choose a birthday photograph no larger than 20MB.";
         return;
       }
 
@@ -493,7 +489,6 @@
       }
 
       try {
-        // Read the checkbox state before submitting.
         const consentCheckbox = alumniForm.querySelector(
           'input[name="consent"]'
         );
@@ -506,7 +501,6 @@
 
         const consentValue = consentCheckbox.checked;
 
-        // Measure photo optimization time.
         const optimizationStart = performance.now();
 
         const optimizedFile = await optimizePhoto(file);
@@ -526,7 +520,6 @@
         const safeName = `${crypto.randomUUID()}.${ext}`;
         const path = `alumni/${safeName}`;
 
-        // Measure Supabase Storage upload time.
         status.textContent = "Uploading photograph…";
 
         const uploadStart = performance.now();
@@ -549,7 +542,6 @@
         }
 
         const payload = {
-          // Save the actual custom title, not "Others".
           alias: finalTitle,
 
           first_name: f.get("first_name"),
@@ -561,13 +553,11 @@
           phone: String(f.get("phone") || "").trim(),
           profession: f.get("profession") || null,
 
-          // Save the actual consent checkbox value.
           consent: consentValue,
 
           photo_path: path
         };
 
-        // Measure database insert time.
         status.textContent = "Saving your registration…";
 
         const databaseStart = performance.now();
@@ -588,10 +578,8 @@
           return;
         }
 
-        // Celebrate only after Supabase confirms a successful insert.
         alumniForm.reset();
 
-        // Hide and reset the custom title field after submission.
         if (customAlumniTitle) {
           customAlumniTitle.hidden = true;
           customAlumniTitle.disabled = true;
