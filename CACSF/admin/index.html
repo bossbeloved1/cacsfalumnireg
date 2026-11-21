@@ -1,666 +1,145 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#123b2a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CACSF Admin">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <title>CACSF | Admin Workspace</title>
-  <link rel="stylesheet" href="admin.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
+<meta content="#123b2a" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="CACSF Admin" name="apple-mobile-web-app-title"/>
+<link href="./manifest.webmanifest" rel="manifest"/>
+<link href="./icons/icon-192.png" rel="apple-touch-icon"/>
+<title>CACSF | Admin Workspace</title>
+<link href="admin.css" rel="stylesheet"/>
 </head>
-
 <body class="admin-body" data-admin-theme="light">
-<div class="app-shell">
-
-  <aside class="sidebar" id="sidebar">
-    <a class="brand" href="../index.html">
-      <span class="brand-mark">✦</span>
-      <span><strong>CACSF</strong><small>ALUMNI ADMIN</small></span>
-    </a>
-
-    <div class="nav-caption">WORKSPACE</div>
-    <nav class="nav-list" aria-label="Admin workspace">
-      <a href="#overview" data-route="overview" class="active"><i>⌂</i>Overview</a>
-      <a href="#directory" data-route="directory"><i>♙</i>Alumni directory</a>
-      <a href="#monthly" data-route="monthly"><i>▦</i>Monthly registrations</a>
-      <a href="#birthdays" data-route="birthdays"><i>◷</i>Birthday directory</a>
-    </nav>
-
-    <div class="nav-caption">WEBSITE CONTENT</div>
-    <nav class="nav-list">
-      <a href="#media" data-route="media"><i>▧</i>Reunion media</a>
-      <a href="#projects" data-route="projects"><i>▣</i>Project gallery</a>
-      <a href="#messages" data-route="messages"><i>✉</i>Contact messages</a>
-    </nav>
-
-    <div class="nav-caption">ADMINISTRATION</div>
-    <nav class="nav-list">
-      <a href="#admin-management" data-route="admin-management">
-        <i>♙</i>Admin management
-      </a>
-      <a href="#monitoring" data-route="monitoring">
-        <i>◷</i>Monitoring & security
-      </a>
-    </nav>
-
-    <div class="nav-caption">ACCOUNT</div>
-    <nav class="nav-list">
-      <a href="#settings" data-route="settings"><i>⚙</i>Admin settings</a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <b>CACSF Alumni Fellowship</b>
-      Faith · Fellowship · Service · Legacy
-    </div>
-  </aside>
-
-  <div class="mobile-shade" id="mobile-shade"></div>
-
-  <main class="main-area">
-    <header class="topbar">
-      <div class="topbar-left">
-        <button class="icon-button menu-toggle" id="menu-toggle" aria-label="Open menu">☰</button>
-        <div class="crumb">CACSF <span>/</span> <b id="crumb-label">Overview</b></div>
-      </div>
-
-      <div class="top-actions">
-        <span class="connection">
-          <i></i><span id="connection-short">Checking connection</span>
-        </span>
-        <button class="icon-button" id="theme-toggle" aria-label="Switch theme" title="Toggle light/dark mode">☾</button>
-        <button class="button button-quiet" id="refresh-all" type="button">↻ Refresh</button>
-        <div class="user-pill">
-          <span class="user-avatar">A</span>
-          <span id="admin-user">Administrator</span>
-        </div>
-        <button class="button button-outline" id="logout" type="button">Log out</button>
-      </div>
-    </header>
-
-    <div class="page-wrap">
-      <div id="connection-status" class="status-line" role="status">
-        Connecting securely to Supabase…
-      </div>
-
-      <!-- OVERVIEW -->
-      <section class="page" id="page-overview">
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">CONTROL CENTRE</span>
-            <h1>Welcome to your workspace.</h1>
-            <p>Live records and activity from your CACSF alumni database.</p>
-          </div>
-          <span class="date-chip" id="today-label"></span>
-        </div>
-
-        <div class="stat-grid">
-          <article class="stat-card">
-            <span>Registered alumni</span><b id="alumni-count">—</b>
-            <small>All registered members</small>
-          </article>
-          <article class="stat-card">
-            <span>Reunion media</span><b id="media-count">—</b>
-            <small>Published media items</small>
-          </article>
-          <article class="stat-card">
-            <span>Project gallery</span><b id="project-count">—</b>
-            <small>Project updates</small>
-          </article>
-          <article class="stat-card">
-            <span>Contact messages</span><b id="message-count">—</b>
-            <small>Messages received</small>
-          </article>
-        </div>
-
-        <div class="content-grid">
-          <section class="panel">
-            <div class="panel-heading">
-              <div>
-                <span class="panel-kicker">LATEST MEMBERS</span>
-                <h2>Recent registrations</h2>
-                <p>Newest alumni entries from Supabase.</p>
-              </div>
-              <a class="text-link" href="#directory">Open directory →</a>
-            </div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr><th>Name</th><th>Email</th><th>Graduation</th><th>Registered</th></tr>
-                </thead>
-                <tbody id="recent-table">
-                  <tr><td colspan="4" class="empty-cell">Loading records…</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <div>
-                <span class="panel-kicker">REGISTRATION ACTIVITY</span>
-                <h2>Monthly snapshot</h2>
-                <p>Grouped by actual registration date.</p>
-              </div>
-            </div>
-            <div id="overview-months" class="mini-months"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ALUMNI DIRECTORY -->
-      <section class="page" id="page-directory" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">MEMBER RECORDS</span>
-            <h1>Alumni directory.</h1>
-            <p>Search, inspect, update and manage registered alumni.</p>
-          </div>
-          <button class="button button-outline" id="directory-export">↓ Export all records</button>
-        </div>
-
-        <section class="panel">
-          <div class="toolbar">
-            <div>
-              <h2>All registered alumni</h2>
-              <p id="directory-count">Loading records…</p>
-            </div>
-            <div class="directory-tools">
-              <button class="button button-danger" id="delete-selected-alumni" type="button" disabled hidden>Delete selected (<span id="selected-alumni-count">0</span>)</button>
-              <input class="search-input" id="alumni-search" type="search" placeholder="Search name, email, phone or year…">
-            </div>
-          </div>
-
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th class="bulk-select-heading"><input id="select-visible-alumni" type="checkbox" aria-label="Select all visible alumni" title="Select all visible alumni"></th><th>Alumnus / Alumna</th><th>Email</th><th>Phone</th>
-                  <th>Graduation</th><th>Birthday</th><th>Registered</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="alumni-table">
-                <tr><td colspan="8" class="empty-cell">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- MONTHLY REGISTRATIONS -->
-      <section class="page" id="page-monthly" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">MONTH-BY-MONTH REPORTS</span>
-            <h1>Birthday-month folders.</h1>
-            <p>Choose a birthday month to view alumni whose birthdays fall in that month, regardless of when they registered.</p>
-          </div>
-        </div>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2 id="year-heading">Birthday-month folders</h2>
-              <p>All 12 birthday months are listed, including months with no celebrants.</p>
-            </div>
-          </div>
-          <div class="month-grid" id="month-grid"></div>
-        </section>
-
-        <section class="panel month-detail-panel" id="month-detail-panel" hidden>
-          <div class="panel-heading">
-            <div>
-              <span class="panel-kicker">BIRTHDAY MONTH DIRECTORY</span>
-              <h2 id="month-detail-title">Month details</h2>
-              <p id="month-detail-note"></p>
-            </div>
-            <div class="download-actions">
-              <button class="button button-primary" id="download-month-xlsx">↓ Download Excel details</button>
-              <button class="button button-outline" id="download-month-photos">↓ Download photos ZIP</button>
-            </div>
-          </div>
-          <div class="month-metrics" id="month-metrics"></div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th class="bulk-select-heading"><input id="select-visible-month-alumni" type="checkbox" aria-label="Select all visible alumni" title="Select all visible alumni"></th><th>Alumnus / Alumna</th><th>Email</th><th>Phone</th>
-                  <th>Graduation</th><th>Registered</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="month-table"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- BIRTHDAY DIRECTORY -->
-      <section class="page" id="page-birthdays" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">FELLOWSHIP COMMUNITY</span>
-            <h1>Birthday directory.</h1>
-            <p>Birthday details recorded by alumni during registration.</p>
-          </div>
-        </div>
-
-        <section class="panel">
-          <div class="toolbar">
-            <div><h2>Birthday records</h2><p id="birthday-count"></p></div>
-            <input class="search-input" id="birthday-search" type="search" placeholder="Search birthdays…">
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr><th>Name</th><th>Birthday</th><th>Email</th><th>Phone</th><th>Graduation</th></tr>
-              </thead>
-              <tbody id="birthday-table"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- REUNION MEDIA -->
-      <section class="page" id="page-media" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">MEMORIES & EVENTS</span>
-            <h1>Reunion media.</h1>
-            <p>Manage photographs, reunion videos and event designs for the website.</p>
-          </div>
-        </div>
-
-        <div class="subnav" id="media-subnav">
-          <button class="selected" data-media-filter="all">All media</button>
-          <button data-media-filter="images">Photographs</button>
-          <button data-media-filter="videos">Videos</button>
-          <button data-media-filter="designs">Designs & flyers</button>
-        </div>
-
-        <div class="content-grid media-grid">
-          <section class="panel">
-            <div class="panel-heading">
-              <div><h2>Upload new media</h2><p>Files are stored in the CACSF media bucket.</p></div>
-            </div>
-            <form id="media-upload" class="form-grid">
-              <label class="control-label">
-                Reunion year
-                <select name="year" class="select-input" required>
-                  <option>2023</option><option>2024</option><option>2025</option>
-                  <option selected>2026</option><option>2027</option>
-                </select>
-              </label>
-              <label class="control-label">
-                Media type
-                <select name="category" class="select-input" required>
-                  <option value="images">Photographs</option>
-                  <option value="videos">Videos</option>
-                  <option value="designs">Designs & flyers</option>
-                </select>
-              </label>
-              <label class="control-label full">
-                Caption
-                <input name="caption" class="text-input" maxlength="180" placeholder="Add a description">
-              </label>
-              <label class="control-label full">
-                Choose file
-                <input name="file" type="file" class="file-input" accept="image/*,video/mp4,video/webm" required>
-                <small>Images and common web video formats are supported. Large videos may require a larger Storage upload limit.</small>
-              </label>
-              <button class="button button-primary" type="submit">Upload to website</button>
-              <p class="form-status full" id="upload-status" role="status"></p>
-            </form>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <div><h2>Media library</h2><p>Existing items from Supabase.</p></div>
-              <span class="count-chip" id="media-filter-count">0 items</span>
-            </div>
-            <div class="media-library" id="media-library"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- PROJECT GALLERY -->
-      <section class="page" id="page-projects" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">PROJECT UPDATES</span>
-            <h1>Project gallery.</h1>
-            <p>Share CACSF project progress, milestones and approved photographs.</p>
-          </div>
-        </div>
-
-        <div class="content-grid media-grid">
-          <section class="panel">
-            <div class="panel-heading">
-              <div><h2>Add project update</h2><p>Upload a project photograph and add its caption.</p></div>
-            </div>
-            <form id="project-upload" class="form-grid">
-              <label class="control-label full">
-                Project name / milestone
-                <input name="caption" class="text-input" maxlength="220" placeholder="Describe the project update" required>
-              </label>
-              <label class="control-label full">
-                Project photograph
-                <input name="file" class="file-input" type="file" accept="image/*" required>
-              </label>
-              <button class="button button-primary" type="submit">Publish project update</button>
-              <p class="form-status full" id="project-status" role="status"></p>
-            </form>
-          </section>
-
-          <section class="panel">
-            <div class="panel-heading">
-              <div><h2>Published project updates</h2><p>Manage the project gallery shown on the website.</p></div>
-              <span class="count-chip" id="project-library-count">0 items</span>
-            </div>
-            <div class="project-library" id="project-library"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- CONTACT MESSAGES -->
-      <section class="page" id="page-messages" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">COMMUNITY INBOX</span>
-            <h1>Contact messages.</h1>
-            <p>Messages submitted through the public CACSF contact form.</p>
-          </div>
-        </div>
-
-        <section class="panel">
-          <div class="toolbar">
-            <div><h2>Website enquiries</h2><p>Messages are displayed from your Supabase messages table.</p></div>
-            <input class="search-input" id="message-search" type="search" placeholder="Search messages…">
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr><th>Sender</th><th>Subject</th><th>Message</th><th>Date received</th></tr>
-              </thead>
-              <tbody id="messages-table"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- ADMIN MANAGEMENT -->
-      <section class="page" id="page-admin-management" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">ACCESS CONTROL</span>
-            <h1>Admin management.</h1>
-            <p>Approve, manage and supervise CACSF administrator accounts.</p>
-          </div>
-          <button class="button button-primary" id="refresh-admins" type="button">↻ Refresh administrators</button>
-        </div>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Add administrator</h2>
-              <p>Invite an administrator using their email address.</p>
-            </div>
-          </div>
-
-          <form id="admin-invite-form" class="form-grid">
-            <label class="control-label">
-              Administrator email
-              <input class="text-input" type="email" name="email" placeholder="person@example.com" required>
-            </label>
-            <label class="control-label">
-              Administrator role
-              <select class="select-input" name="role" required>
-                <option value="admin">Administrator</option>
-                <option value="super_admin">Super Administrator</option>
-              </select>
-            </label>
-            <button class="button button-primary" type="submit">Send invitation</button>
-            <p class="form-status full" id="admin-invite-status" role="status"></p>
-          </form>
-        </section>
-
-        <section class="panel">
-          <div class="toolbar">
-            <div>
-              <h2>Approved administrators</h2>
-              <p id="admin-account-count">Loading administrator accounts…</p>
-            </div>
-            <input class="search-input" id="admin-search" type="search" placeholder="Search administrators…">
-          </div>
-
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Email</th><th>Role</th><th>Status</th><th>Added</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-users-table">
-                <tr><td colspan="5" class="empty-cell">Loading administrators…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- MONITORING AND SECURITY -->
-      <section class="page" id="page-monitoring" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">SYSTEM OVERSIGHT</span>
-            <h1>Monitoring & security.</h1>
-            <p>Review administrator sessions, recent activity and security events.</p>
-          </div>
-          <button class="button button-outline" id="refresh-monitoring" type="button">↻ Refresh monitoring</button>
-        </div>
-
-        <div class="stat-grid">
-          <article class="stat-card">
-            <span>Approved administrators</span><b id="monitor-admin-count">—</b>
-            <small>Active administrator accounts</small>
-          </article>
-          <article class="stat-card">
-            <span>Recently active</span><b id="monitor-online-count">—</b>
-            <small>Heartbeat within the last 5 minutes</small>
-          </article>
-          <article class="stat-card">
-            <span>Login events</span><b id="monitor-login-count">—</b>
-            <small>Recorded login events</small>
-          </article>
-          <article class="stat-card">
-            <span>Activity events</span><b id="monitor-activity-count">—</b>
-            <small>Recorded administrator actions</small>
-          </article>
-        </div>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <div><h2>Administrator presence</h2><p>Last heartbeat received from each administrator.</p></div>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>Administrator</th><th>Last seen</th><th>Status</th></tr></thead>
-              <tbody id="admin-presence-table">
-                <tr><td colspan="3" class="empty-cell">Loading presence…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <div><h2>Login history</h2><p>Recorded administrator login and logout events.</p></div>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr><th>Administrator ID</th><th>Event</th><th>Date and time</th></tr>
-              </thead>
-              <tbody id="admin-login-table">
-                <tr><td colspan="3" class="empty-cell">Loading login history…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-heading">
-            <div><h2>Administrator activity log</h2><p>Routine activity can be cleared by Super Admin only. Security and login audit events are retained.</p></div>
-          </div>
-          <div class="monitoring-tools">
-            <label>Administrator <select id="activity-admin-filter"><option value="">All administrators</option></select></label>
-            <label>Activity type <select id="activity-type-filter"><option value="">All activity types</option></select></label>
-            <label>From <input id="activity-from-filter" type="date"></label>
-            <label>To <input id="activity-to-filter" type="date"></label>
-            <button class="button button-outline" id="activity-filter-reset" type="button">Reset filters</button>
-            <button class="button button-outline" id="clear-selected-activity" type="button">Clear selected</button>
-            <button class="button button-danger" id="clear-all-activity" type="button">Clear all routine activity</button>
-          </div>
-          <p id="activity-clear-status" class="form-status" role="status" aria-live="polite"></p>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th><input id="select-visible-activity" type="checkbox" aria-label="Select visible routine activity"></th><th>Administrator</th><th>Activity</th><th>Entity / details</th><th>Date and time</th>
-                </tr>
-              </thead>
-              <tbody id="admin-activity-table">
-                <tr><td colspan="5" class="empty-cell">Loading activity…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- ADMIN SETTINGS -->
-      <section class="page" id="page-settings" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">ACCOUNT & PREFERENCES</span>
-            <h1>Admin settings.</h1>
-            <p>Manage your administrator session and workspace preferences.</p>
-          </div>
-        </div>
-
-        <div class="settings-grid">
-          <section class="panel">
-            <span class="panel-kicker">SIGNED-IN ACCOUNT</span>
-            <h2>Administrator profile</h2>
-            <p class="muted">You are signed in with this Supabase Auth account.</p>
-            <div class="profile-line">
-              <span class="profile-avatar">A</span>
-              <div><b id="settings-email">—</b><small>Approved CACSF administrator</small></div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <span class="panel-kicker">SECURITY</span>
-            <h2>Change password</h2>
-            <p class="muted">Choose a new password for your admin account.</p>
-            <form id="password-form" class="form-grid">
-              <label class="control-label full">
-                New password
-                <input class="text-input" type="password" name="password" minlength="8" required autocomplete="new-password">
-              </label>
-              <label class="control-label full">
-                Confirm new password
-                <input class="text-input" type="password" name="confirm" minlength="8" required autocomplete="new-password">
-              </label>
-              <button class="button button-primary" type="submit">Update password</button>
-              <p class="form-status full" id="password-status" role="status"></p>
-            </form>
-          </section>
-
-          <section class="panel">
-            <span class="panel-kicker">APPEARANCE</span>
-            <h2>Display preferences</h2>
-            <p class="muted">Use the moon/sun control in the top bar to switch between light and dark mode. Your selection is saved on this device.</p>
-            <button class="button button-outline" id="settings-theme">Toggle appearance</button>
-          </section>
-
-          <section class="panel">
-            <span class="panel-kicker">SESSION</span>
-            <h2>Sign out securely</h2>
-            <p class="muted">End your administrator session on this device.</p>
-            <button class="button button-danger" id="settings-logout">Log out</button>
-          </section>
-        </div>
-      </section>
-
-    </div>
-  </main>
+<div class="app-shell"><aside aria-label="CACSF administration navigation" class="sidebar" id="sidebar">
+<div class="brand"><img alt="CACSF logo" class="brand-logo" src="../assets/cacsf-logo.png"/><span class="brand-copy"><strong>CACSF</strong><small>ALUMNI ADMIN</small></span></div>
+<div class="sidebar-label">WORKSPACE</div>
+<nav class="side-nav">
+<a class="side-link" data-route="overview" href="#overview"><span class="side-icon">⌂</span><span>Dashboard</span></a>
+<button aria-expanded="true" class="nav-group-toggle" data-group-target="birthday-subnav" type="button"><span class="side-icon">♧</span><span>Birthday</span><span aria-hidden="true" class="chevron"></span></button>
+<div class="nav-submenu open" id="birthday-subnav">
+<a data-route="birthday-overview" href="#birthday-overview">Overview</a>
+<a data-route="directory" href="#directory">Alumni Directory</a>
+<a data-route="monthly" href="#monthly">Monthly Registrations</a>
+<a data-route="birthdays" href="#birthdays">Birthday Directory</a>
 </div>
+<button aria-expanded="false" class="nav-group-toggle" data-group-target="wedding-subnav" type="button"><span class="side-icon">♡</span><span>Wedding Anniversary</span><span aria-hidden="true" class="chevron"></span></button>
+<div class="nav-submenu" id="wedding-subnav">
+<a data-route="wedding-overview" href="#wedding-overview">Overview</a>
+<a data-route="wedding-directory" href="#wedding-directory">Wedding Directory</a>
+<a data-route="wedding-monthly" href="#wedding-monthly">Monthly Registrations</a>
+<a data-route="anniversaries" href="#anniversaries">Anniversary Directory</a>
+</div>
+<div class="sidebar-label">WEBSITE CONTENT</div>
+<a class="side-link" data-route="media" href="#media"><span class="side-icon">▧</span><span>Reunion Media</span></a>
+<a class="side-link" data-route="projects" href="#projects"><span class="side-icon">▣</span><span>Project Gallery</span></a>
+<a class="side-link" data-route="messages" href="#messages"><span class="side-icon">✉</span><span>Contact Messages</span></a>
+<div class="sidebar-label">ADMINISTRATION</div>
+<a class="side-link" data-route="admin-management" href="#admin-management"><span class="side-icon">♙</span><span>Admin Management</span></a>
+<a class="side-link" data-route="monitoring" href="#monitoring"><span class="side-icon">◷</span><span>Monitoring &amp; Security</span></a>
+<a class="side-link" data-route="settings" href="#settings"><span class="side-icon">⚙</span><span>Settings</span></a>
+</nav>
+<div class="sidebar-footer"><b>CACSF Alumni Fellowship</b><small>Faith · Fellowship · Service · Legacy</small></div>
+</aside><div class="mobile-shade" id="mobile-shade"></div><main class="main-area">
+<header class="topbar">
+<div class="topbar-start"><button aria-expanded="false" aria-label="Open navigation" class="icon-button menu-toggle" id="menu-toggle">☰</button><div><div class="breadcrumb">CACSF <span>/</span> <b id="crumb-label">Dashboard</b></div><h2 id="topbar-title">Dashboard</h2></div></div>
+<div class="topbar-tools"><label class="top-search"><span>⌕</span><input id="workspace-search" placeholder="Search this workspace…" type="search"/></label><span class="connection" hidden><i></i><span id="connection-short">Checking connection</span></span><button aria-label="Switch theme" class="icon-button theme-control" id="theme-toggle" title="Toggle light/dark mode">☾</button><div class="user-pill"><span class="user-avatar">A</span><span id="admin-user">Administrator</span></div><button class="button button-outline nav-logout" id="logout" type="button">Log out</button></div>
+</header>
+<section class="welcome-band"><div class="welcome-copy"><span class="eyebrow">CACSF ALUMNI FELLOWSHIP</span><h1>Good day, <span id="welcome-admin">Administrator</span></h1><p>Your fellowship records, celebrations and activities in one place.</p></div><div class="welcome-actions"><span class="date-chip" id="today-label"></span></div></section>
+<div class="page-wrap">
+<div class="status-line" id="connection-status" role="status" hidden></div>
+<section class="page" id="page-overview">
+<div class="overview-intro"><div><span class="panel-kicker">AT A GLANCE</span><h2>Your fellowship at a glance</h2><p>Live records and activity from your CACSF alumni database.</p></div></div>
+<div class="stat-grid">
+<article class="stat-card"><span>Registered alumni (Birthday)</span><b id="alumni-count">—</b><small>Alumni registered for birthdays</small></article><article class="stat-card"><span>Wedding registrations</span><b id="main-wedding-count">—</b><small>Couples registered for anniversaries</small></article>
+<article class="stat-card"><span>Reunion media</span><b id="media-count">—</b><small>Published media items</small></article>
+<article class="stat-card"><span>Project gallery</span><b id="project-count">—</b><small>Project updates</small></article>
+<article class="stat-card"><span>Contact messages</span><b id="message-count">—</b><small>Messages received</small></article>
 
-<!-- ALUMNI EDIT DIALOG -->
-<dialog id="alumni-dialog" class="modal">
-  <form id="alumni-edit-form" method="dialog">
-    <div class="modal-head">
-      <div><span class="panel-kicker">ALUMNI RECORD</span><h2>Edit registration</h2></div>
-      <button class="icon-button" type="button" id="close-edit" aria-label="Close">×</button>
-    </div>
+</div>
+<div class="dashboard-columns">
+<section class="panel dashboard-panel recent-panel"><div class="panel-heading"><div><span class="panel-kicker">LATEST MEMBERS</span><h2>Recent registrations</h2><p>Newest alumni entries from Supabase.</p></div><a class="text-link" href="#directory">View all →</a></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Graduation</th><th>Registered</th></tr></thead><tbody id="recent-table"><tr><td class="empty-cell" colspan="4">Loading records…</td></tr></tbody></table></div></section>
+<section class="panel dashboard-panel"><div class="panel-heading"><div><span class="panel-kicker">REGISTRATION ACTIVITY</span><h2>Monthly snapshot</h2><p>Registration trend by month.</p></div></div><div class="mini-months" id="overview-months"></div></section>
+</div>
+</section>
+<section class="page" hidden="" id="page-birthday-overview">
+<div class="page-heading"><div><span class="eyebrow">CELEBRATION MANAGEMENT</span><h1>Birthday overview.</h1><p>A dedicated view of alumni registrations and birthday celebrations.</p></div><span class="date-chip date-chip-light">Live records</span></div>
+<div class="stat-grid"><article class="stat-card purple"><span>Registered alumni</span><b id="birthday-total">—</b><small>All alumni records</small></article><article class="stat-card blue"><span>Birthday records</span><b id="birthday-birthdays">—</b><small>Members with birthday details</small></article><article class="stat-card green"><span>This month</span><b id="birthday-this-month">—</b><small>Birthdays in the current month</small></article><article class="stat-card lime"><span>Profile photos</span><b id="birthday-photos">—</b><small>Available alumni photos</small></article></div>
+<div class="dashboard-columns">
+<section class="panel dashboard-panel"><div class="panel-heading"><div><span class="panel-kicker">LATEST RECORDS</span><h2>Recent alumni registrations</h2><p>Newest birthday/alumni records.</p></div></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Date</th><th>Email</th><th>Registered</th></tr></thead><tbody id="birthday-recent-table"><tr><td class="empty-cell" colspan="4">Loading records…</td></tr></tbody></table></div></section>
+<section class="panel dashboard-panel"><div class="panel-heading"><div><span class="panel-kicker">MONTHLY ACTIVITY</span><h2>Monthly snapshot</h2><p>Records grouped by celebration month.</p></div></div><div class="mini-months" id="birthday-overview-months"></div></section>
 
-    <input type="hidden" name="id">
+</div>
+</section><section class="page" hidden="" id="page-wedding-overview">
+<div class="page-heading"><div><span class="eyebrow">CELEBRATION MANAGEMENT</span><h1>Wedding anniversary overview.</h1><p>A dedicated workspace for couples and their wedding celebrations.</p></div><span class="date-chip date-chip-light">Live records</span></div>
+<div class="stat-grid"><article class="stat-card purple"><span>Registered couples</span><b id="wedding-total">—</b><small>All wedding registrations</small></article><article class="stat-card blue"><span>This month</span><b id="wedding-this-month">—</b><small>Anniversaries in the current month</small></article><article class="stat-card green"><span>With photos</span><b id="wedding-with-photos">—</b><small>Couples with uploaded photos</small></article></div>
+<div class="dashboard-columns">
+<section class="panel dashboard-panel"><div class="panel-heading"><div><span class="panel-kicker">LATEST RECORDS</span><h2>Recent wedding registrations</h2><p>Newest couple registrations.</p></div></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Date</th><th>Email</th><th>Registered</th></tr></thead><tbody id="wedding-recent-table"><tr><td class="empty-cell" colspan="4">Loading records…</td></tr></tbody></table></div></section>
+<section class="panel dashboard-panel"><div class="panel-heading"><div><span class="panel-kicker">MONTHLY ACTIVITY</span><h2>Monthly snapshot</h2><p>Records grouped by celebration month.</p></div></div><div class="mini-months" id="wedding-overview-months"></div></section>
 
-    <div class="form-grid">
-      <label class="control-label">Title / Alias<input name="alias" class="text-input" required></label>
-      <label class="control-label">First name<input name="first_name" class="text-input" required></label>
-      <label class="control-label">Surname<input name="surname" class="text-input" required></label>
-      <label class="control-label">Email<input name="email" type="email" class="text-input"></label>
+</div>
+</section>
+<section class="page" hidden="" id="page-directory">
+<div class="page-heading"><div><span class="eyebrow">MEMBER RECORDS</span><h1>Alumni directory.</h1><p>Search, inspect, update and manage registered alumni.</p></div><div class="heading-actions"><button class="button button-outline" id="directory-export">↓ Excel</button><button class="button button-outline" id="directory-export-word">↓ Word</button><button class="button button-outline" id="directory-export-photos">↓ All photos ZIP</button><button class="button button-outline" id="download-selected-alumni-photos">↓ Selected photos ZIP</button></div></div>
+<section class="panel"><div class="toolbar"><div><h2>All registered alumni</h2><p id="directory-count">Loading records…</p></div><div class="directory-tools"><button class="button button-danger" disabled="" hidden="" id="delete-selected-alumni" type="button">Delete selected (<span id="selected-alumni-count">0</span>)</button><input class="search-input" id="alumni-search" placeholder="Search name, email, phone or year…" type="search"/></div></div><div class="table-scroll"><table><thead><tr><th class="bulk-select-heading"><input aria-label="Select all visible alumni" id="select-visible-alumni" title="Select all visible alumni" type="checkbox"/></th><th>Alumnus / Alumna</th><th>Email</th><th>Phone</th><th>Graduation</th><th>Birthday</th><th>Registered</th><th>Actions</th></tr></thead><tbody id="alumni-table"><tr><td class="empty-cell" colspan="8">Loading…</td></tr></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-monthly">
+<div class="page-heading"><div><span class="eyebrow">MONTH-BY-MONTH REPORTS</span><h1>Birthday-month folders.</h1><p>Choose a birthday month to view alumni whose birthdays fall in that month, regardless of when they registered.</p></div></div>
+<section class="panel"><div class="panel-heading"><div><h2 id="year-heading">Birthday-month folders</h2><p>All 12 birthday months are listed, including months with no celebrants.</p></div></div><div class="month-grid" id="month-grid"></div></section>
+<section class="panel month-detail-panel" hidden="" id="month-detail-panel"><div class="panel-heading"><div><span class="panel-kicker">BIRTHDAY MONTH DIRECTORY</span><h2 id="month-detail-title">Month details</h2><p id="month-detail-note"></p></div><div class="download-actions"><button class="button button-primary" id="download-month-xlsx">↓ Excel details</button><button class="button button-outline" id="download-month-word">↓ Word details</button><button class="button button-outline" id="download-month-photos">↓ Photos ZIP</button></div></div><div class="month-metrics" id="month-metrics"></div><div class="table-scroll"><table><thead><tr><th class="bulk-select-heading"><input aria-label="Select all visible alumni" id="select-visible-month-alumni" title="Select all visible alumni" type="checkbox"/></th><th>Alumnus / Alumna</th><th>Email</th><th>Phone</th><th>Graduation</th><th>Registered</th><th>Actions</th></tr></thead><tbody id="month-table"></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-birthdays">
+<div class="page-heading"><div><span class="eyebrow">FELLOWSHIP COMMUNITY</span><h1>Birthday directory.</h1><p>Birthday details recorded by alumni during registration.</p></div><div class="heading-actions"><button class="button button-outline" id="birthday-export-xlsx" type="button">↓ Excel</button><button class="button button-outline" id="birthday-export-word" type="button">↓ Word</button></div></div>
+<section class="panel"><div class="toolbar"><div><h2>Birthday records</h2><p id="birthday-count"></p></div><input class="search-input" id="birthday-search" placeholder="Search birthdays…" type="search"/></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Birthday</th><th>Email</th><th>Phone</th><th>Graduation</th></tr></thead><tbody id="birthday-table"></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-wedding-directory">
+<div class="page-heading"><div><span class="eyebrow">FELLOWSHIP CELEBRATIONS</span><h1>Wedding directory.</h1><p>View, edit, export and manage wedding anniversary registrations.</p></div><div class="heading-actions"><button class="button button-outline" id="wedding-export-xlsx" type="button">↓ Excel</button><button class="button button-outline" id="wedding-export-word" type="button">↓ Word</button><button class="button button-outline" id="wedding-export-photos" type="button">↓ All photos ZIP</button><button class="button button-outline" id="download-selected-wedding-photos" type="button">↓ Selected photos ZIP</button><button class="button button-primary" id="refresh-weddings" type="button">↻ Refresh</button></div></div>
+<section class="panel"><div class="toolbar"><div><h2>Wedding registrations</h2><p id="wedding-count">Loading wedding registrations…</p></div><div class="directory-tools"><button class="button button-danger" id="delete-selected-weddings" type="button" hidden disabled>Delete selected (<span id="selected-wedding-count">0</span>)</button><input class="search-input" id="wedding-search" placeholder="Search couple, email or date…" type="search"/></div></div><p aria-live="polite" class="form-status" id="wedding-status" role="status"></p><div class="table-scroll"><table><thead><tr><th><input aria-label="Select visible wedding records" id="select-visible-weddings" type="checkbox"/></th><th>Couple</th><th>Wedding date</th><th>Email</th><th>Years together</th><th>Registered</th><th>Actions</th></tr></thead><tbody id="wedding-table"><tr><td class="empty-cell" colspan="8">Loading…</td></tr></tbody></table></div><p class="muted wedding-permission-note">Wedding records are stored in the separate wedding_registrations table. Deletion is restricted to Super Administrators.</p></section>
+</section>
+<section class="page" hidden="" id="page-media">
+<div class="page-heading"><div><span class="eyebrow">MEMORIES &amp; EVENTS</span><h1>Reunion media.</h1><p>Manage photographs, reunion videos and event designs for the website.</p></div></div>
+<div class="subnav" id="media-subnav"><button class="selected" data-media-filter="all">All media</button><button data-media-filter="images">Photographs</button><button data-media-filter="videos">Videos</button><button data-media-filter="designs">Designs &amp; flyers</button></div>
+<div class="content-grid media-grid"><section class="panel"><div class="panel-heading"><div><h2>Upload new media</h2><p>Files are stored in the CACSF media bucket.</p></div></div><form class="form-grid" id="media-upload"><label class="control-label">Reunion year<select class="select-input" name="year" required=""><option>2023</option><option>2024</option><option>2025</option><option selected="">2026</option><option>2027</option></select></label><label class="control-label">Media type<select class="select-input" name="category" required=""><option value="images">Photographs</option><option value="videos">Videos</option><option value="designs">Designs &amp; flyers</option></select></label><label class="control-label full">Caption<input class="text-input" maxlength="180" name="caption" placeholder="Add a description"/></label><label class="control-label full">Choose file<input accept="image/*,video/mp4,video/webm" class="file-input" name="file" required="" type="file"/><small>Images and common web video formats are supported. Large videos may require a larger Storage upload limit.</small></label><button class="button button-primary" type="submit">Upload to website</button><p class="form-status full" id="upload-status" role="status"></p></form></section><section class="panel"><div class="panel-heading"><div><h2>Media library</h2><p>Existing items from Supabase.</p></div><span class="count-chip" id="media-filter-count">0 items</span></div><div class="media-library" id="media-library"></div></section></div>
+</section>
+<section class="page" hidden="" id="page-projects">
+<div class="page-heading"><div><span class="eyebrow">PROJECT UPDATES</span><h1>Project gallery.</h1><p>Share CACSF project progress, milestones and approved photographs.</p></div></div>
+<div class="content-grid media-grid"><section class="panel"><div class="panel-heading"><div><h2>Add project update</h2><p>Upload a project photograph and add its caption.</p></div></div><form class="form-grid" id="project-upload"><label class="control-label full">Project name / milestone<input class="text-input" maxlength="220" name="caption" placeholder="Describe the project update" required=""/></label><label class="control-label full">Project photograph<input accept="image/*" class="file-input" name="file" required="" type="file"/></label><button class="button button-primary" type="submit">Publish project update</button><p class="form-status full" id="project-status" role="status"></p></form></section><section class="panel"><div class="panel-heading"><div><h2>Published project updates</h2><p>Manage the project gallery shown on the website.</p></div><span class="count-chip" id="project-library-count">0 items</span></div><div class="project-library" id="project-library"></div></section></div>
+</section>
+<section class="page" hidden="" id="page-messages">
+<div class="page-heading"><div><span class="eyebrow">COMMUNITY INBOX</span><h1>Contact messages.</h1><p>Messages submitted through the public CACSF contact form.</p></div></div>
+<section class="panel"><div class="toolbar"><div><h2>Website enquiries</h2><p>Messages are displayed from your Supabase messages table.</p></div><input class="search-input" id="message-search" placeholder="Search messages…" type="search"/></div><div class="table-scroll"><table><thead><tr><th>Sender</th><th>Subject</th><th>Message</th><th>Date received</th></tr></thead><tbody id="messages-table"></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-admin-management">
+<div class="page-heading"><div><span class="eyebrow">ACCESS CONTROL</span><h1>Admin management.</h1><p>Approve, manage and supervise CACSF administrator accounts.</p></div><button class="button button-primary" id="refresh-admins" type="button">↻ Refresh administrators</button></div>
+<section class="panel"><div class="panel-heading"><div><h2>Add administrator</h2><p>Invite an administrator using their email address.</p></div></div><form class="form-grid" id="admin-invite-form"><label class="control-label">Administrator email<input class="text-input" name="email" placeholder="person@example.com" required="" type="email"/></label><label class="control-label">Administrator role<select class="select-input" name="role" required=""><option value="admin">Administrator</option><option value="super_admin">Super Administrator</option></select></label><button class="button button-primary" type="submit">Send invitation</button><p class="form-status full" id="admin-invite-status" role="status"></p></form></section>
+<section class="panel"><div class="toolbar"><div><h2>Approved administrators</h2><p id="admin-account-count">Loading administrator accounts…</p></div><input class="search-input" id="admin-search" placeholder="Search administrators…" type="search"/></div><div class="table-scroll"><table><thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th>Actions</th></tr></thead><tbody id="admin-users-table"><tr><td class="empty-cell" colspan="5">Loading administrators…</td></tr></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-monitoring">
+<div class="page-heading"><div><span class="eyebrow">SYSTEM OVERSIGHT</span><h1>Monitoring &amp; security.</h1><p>Review administrator sessions, recent activity and security events.</p></div><button class="button button-outline" id="refresh-monitoring" type="button">↻ Refresh monitoring</button></div>
+<div class="stat-grid"><article class="stat-card"><span>Approved administrators</span><b id="monitor-admin-count">—</b><small>Active administrator accounts</small></article><article class="stat-card"><span>Recently active</span><b id="monitor-online-count">—</b><small>Heartbeat within the last 5 minutes</small></article><article class="stat-card"><span>Login events</span><b id="monitor-login-count">—</b><small>Recorded login events</small></article><article class="stat-card"><span>Activity events</span><b id="monitor-activity-count">—</b><small>Recorded administrator actions</small></article></div>
+<section class="panel"><div class="panel-heading"><div><h2>Administrator presence</h2><p>Last heartbeat received from each administrator.</p></div></div><div class="table-scroll"><table><thead><tr><th>Administrator</th><th>Last seen</th><th>Status</th></tr></thead><tbody id="admin-presence-table"><tr><td class="empty-cell" colspan="3">Loading presence…</td></tr></tbody></table></div></section>
+<section class="panel"><div class="panel-heading"><div><h2>Login history</h2><p>Recorded administrator login and logout events.</p></div></div><div class="table-scroll"><table><thead><tr><th>Administrator ID</th><th>Event</th><th>Date and time</th></tr></thead><tbody id="admin-login-table"><tr><td class="empty-cell" colspan="3">Loading login history…</td></tr></tbody></table></div></section>
+<section class="panel"><div class="panel-heading"><div><h2>Administrator activity log</h2><p>Routine activity can be cleared by Super Admin only. Security and login audit events are retained.</p></div></div><div class="monitoring-tools"><label>Administrator <select id="activity-admin-filter"><option value="">All administrators</option></select></label><label>Activity type <select id="activity-type-filter"><option value="">All activity types</option></select></label><label>From <input id="activity-from-filter" type="date"/></label><label>To <input id="activity-to-filter" type="date"/></label><button class="button button-outline" id="activity-filter-reset" type="button">Reset filters</button><button class="button button-outline" id="clear-selected-activity" type="button">Clear selected</button><button class="button button-danger" id="clear-all-activity" type="button">Clear all routine activity</button></div><p aria-live="polite" class="form-status" id="activity-clear-status" role="status"></p><div class="table-scroll"><table><thead><tr><th><input aria-label="Select visible routine activity" id="select-visible-activity" type="checkbox"/></th><th>Administrator</th><th>Activity</th><th>Entity / details</th><th>Date and time</th></tr></thead><tbody id="admin-activity-table"><tr><td class="empty-cell" colspan="5">Loading activity…</td></tr></tbody></table></div></section>
+</section>
+<section class="page" hidden="" id="page-settings">
+<div class="page-heading"><div><span class="eyebrow">ACCOUNT &amp; PREFERENCES</span><h1>Admin settings.</h1><p>Manage your administrator session and workspace preferences.</p></div></div>
+<div class="settings-grid"><section class="panel"><span class="panel-kicker">SIGNED-IN ACCOUNT</span><h2>Administrator profile</h2><p class="muted">You are signed in with this Supabase Auth account.</p><div class="profile-line"><span class="profile-avatar">A</span><div><b id="settings-email">—</b><small>Approved CACSF administrator</small></div></div></section><section class="panel"><span class="panel-kicker">SECURITY</span><h2>Change password</h2><p class="muted">Choose a new password for your admin account.</p><form class="form-grid" id="password-form"><label class="control-label full">New password<input autocomplete="new-password" class="text-input" minlength="8" name="password" required="" type="password"/></label><label class="control-label full">Confirm new password<input autocomplete="new-password" class="text-input" minlength="8" name="confirm" required="" type="password"/></label><button class="button button-primary" type="submit">Update password</button><p class="form-status full" id="password-status" role="status"></p></form></section><section class="panel"><span class="panel-kicker">APPEARANCE</span><h2>Display preferences</h2><p class="muted">Use the moon/sun control in the top bar to switch between light and dark mode. Your selection is saved on this device.</p><button class="button button-outline" id="settings-theme">Toggle appearance</button></section><section class="panel"><span class="panel-kicker">SESSION</span><h2>Sign out securely</h2><p class="muted">End your administrator session on this device.</p><button class="button button-danger" id="settings-logout">Log out</button></section></div>
+</section>
 
-      <label class="control-label">
-        Birthday month
-        <select name="birth_month" class="select-input" required>
-          <option value="">Select month</option>
-          <option>January</option><option>February</option><option>March</option>
-          <option>April</option><option>May</option><option>June</option>
-          <option>July</option><option>August</option><option>September</option>
-          <option>October</option><option>November</option><option>December</option>
-        </select>
-      </label>
+<section class="page" hidden="" id="page-wedding-monthly"><div class="page-heading"><div><span class="eyebrow">MONTH-BY-MONTH REPORTS</span><h1>Anniversary-month folders.</h1><p>Choose a month to view couples celebrating their wedding anniversary.</p></div></div><section class="panel"><div class="panel-heading"><div><h2>12 anniversary-month folders</h2><p>All months are listed, including months with no anniversaries.</p></div></div><div class="month-grid" id="wedding-month-grid"></div></section><section class="panel month-detail-panel" hidden="" id="wedding-month-detail-panel"><div class="panel-heading"><div><span class="panel-kicker">ANNIVERSARY MONTH DIRECTORY</span><h2 id="wedding-month-detail-title">Month details</h2><p id="wedding-month-detail-note"></p></div><div class="download-actions"><button class="button button-primary" id="download-wedding-month-xlsx">↓ Excel details</button><button class="button button-outline" id="download-wedding-month-word">↓ Word details</button><button class="button button-outline" id="download-wedding-month-photos">↓ Photos ZIP</button></div></div><div class="table-scroll"><table><thead><tr><th>Couple</th><th>Wedding date</th><th>Email</th><th>Years together</th><th>Actions</th></tr></thead><tbody id="wedding-month-table"></tbody></table></div></section></section>
+<section class="page" hidden="" id="page-anniversaries"><div class="page-heading"><div><span class="eyebrow">COUPLE CELEBRATIONS</span><h1>Anniversary directory.</h1><p>Browse couples by wedding date and upcoming anniversary.</p></div><div class="heading-actions"><button class="button button-outline" id="anniversary-export-xlsx" type="button">↓ Excel</button><button class="button button-outline" id="anniversary-export-word" type="button">↓ Word</button><input class="search-input" id="anniversary-search" placeholder="Search anniversary records…" type="search"/></div></div><section class="panel"><div class="toolbar"><div><h2>All anniversary records</h2><p id="anniversary-count">Loading records…</p></div></div><div class="table-scroll"><table><thead><tr><th>Couple</th><th>Wedding date</th><th>Next anniversary</th><th>Years together</th><th>Email</th></tr></thead><tbody id="anniversary-table"></tbody></table></div></section></section>
+</div></main></div>
+<dialog class="modal" id="alumni-dialog"><form id="alumni-edit-form" method="dialog"><div class="modal-head"><div><span class="panel-kicker">ALUMNI RECORD</span><h2>Edit registration</h2></div><button aria-label="Close" class="icon-button" id="close-edit" type="button">×</button></div><input name="id" type="hidden"/><div class="form-grid"><label class="control-label">Title / Alias<input class="text-input" name="alias" required=""/></label><label class="control-label">First name<input class="text-input" name="first_name" required=""/></label><label class="control-label">Surname<input class="text-input" name="surname" required=""/></label><label class="control-label">Email<input class="text-input" name="email" type="email"/></label><label class="control-label">Birthday month<select class="select-input" name="birth_month" required=""><option value="">Select month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></label><label class="control-label">Birthday day<input class="text-input" max="31" min="1" name="birth_day" required="" type="number"/></label><label class="control-label">Graduation year<input class="text-input" name="graduation_year" required="" type="number"/></label><label class="control-label">Phone<input class="text-input" name="phone"/></label><label class="control-label full">Profession<input class="text-input" name="profession"/></label><div class="control-label full"><span>Current profile photo</span><div id="alumni-edit-photo-preview" class="wedding-edit-photo-preview"></div></div><label class="control-label full">Replace profile photo (optional)<input accept="image/*" class="file-input" name="photo" type="file"/></label></div><p class="form-status" id="edit-status" role="status"></p><div class="modal-actions"><button class="button button-outline" id="cancel-edit" type="button">Cancel</button><button class="button button-primary" type="submit">Save changes</button></div></form></dialog>
+<dialog class="modal" id="alumni-details-dialog"><div class="modal-head"><div><span class="panel-kicker">ALUMNI DIRECTORY</span><h2>Full registration details</h2></div><button aria-label="Close" class="icon-button" id="close-details" type="button">×</button></div><div class="details-grid" id="alumni-details-content"></div><div class="modal-actions"><button class="button button-outline" id="details-close-button" type="button">Close</button></div></dialog>
+<dialog class="modal" id="wedding-photos-dialog"><div class="modal-head"><div><span class="panel-kicker">WEDDING REGISTRATION</span><h2>Uploaded wedding photos</h2></div><button aria-label="Close" class="icon-button" id="close-wedding-photos" type="button">×</button></div><div class="wedding-photos-grid" id="wedding-photos-content"></div><div class="modal-actions"><button class="button button-outline" id="wedding-photos-close-button" type="button">Close</button></div></dialog>
 
-      <label class="control-label">Birthday day<input name="birth_day" type="number" min="1" max="31" class="text-input" required></label>
-      <label class="control-label">Graduation year<input name="graduation_year" type="number" class="text-input" required></label>
-      <label class="control-label">Phone<input name="phone" class="text-input"></label>
-      <label class="control-label full">Profession<input name="profession" class="text-input"></label>
-      <label class="control-label full">Replace profile photo (optional)<input name="photo" type="file" accept="image/*" class="file-input"></label>
-    </div>
-
-    <p class="form-status" id="edit-status" role="status"></p>
-
-    <div class="modal-actions">
-      <button class="button button-outline" type="button" id="cancel-edit">Cancel</button>
-      <button class="button button-primary" type="submit">Save changes</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- ALUMNI DETAILS DIALOG -->
-<dialog id="alumni-details-dialog" class="modal">
-  <div class="modal-head">
-    <div><span class="panel-kicker">ALUMNI DIRECTORY</span><h2>Full registration details</h2></div>
-    <button class="icon-button" type="button" id="close-details" aria-label="Close">×</button>
-  </div>
-  <div id="alumni-details-content" class="details-grid"></div>
-  <div class="modal-actions">
-    <button class="button button-outline" type="button" id="details-close-button">Close</button>
-  </div>
-</dialog>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<dialog class="modal" id="wedding-details-dialog"><div class="modal-head"><div><span class="panel-kicker">WEDDING DIRECTORY</span><h2>Full wedding registration details</h2></div><button class="icon-button" type="button" id="close-wedding-details" aria-label="Close">×</button></div><div class="details-grid" id="wedding-details-content"></div><div class="modal-actions"><button class="button button-outline" type="button" id="wedding-details-close-button">Close</button></div></dialog><dialog class="modal" id="wedding-edit-dialog"><form id="wedding-edit-form"><div class="modal-head"><div><span class="panel-kicker">WEDDING RECORD</span><h2>Edit registration</h2></div><button aria-label="Close" class="icon-button" id="close-wedding-edit" type="button">×</button></div><input name="id" type="hidden"/><div class="form-grid"><label class="control-label full">Couples' names<input class="text-input" maxlength="180" name="couple_name" required=""/></label><label class="control-label">Wedding date<input class="text-input" name="wedding_date" required="" type="date"/></label><label class="control-label">Email address<input class="text-input" name="email" type="email" readonly aria-readonly="true"/><small>Registration email cannot be changed.</small></label><div class="control-label full"><span>Current uploaded photos</span><div id="wedding-edit-photo-preview" class="wedding-edit-photo-preview"></div></div><label class="control-label full">Replace first photo (optional)<input class="file-input" name="photo_one" type="file" accept="image/*"/></label><label class="control-label full">Replace second photo (optional)<input class="file-input" name="photo_two" type="file" accept="image/*"/></label></div><p class="form-status" id="wedding-edit-status" role="status"></p><div class="modal-actions"><button class="button button-outline" id="cancel-wedding-edit" type="button">Cancel</button><button class="button button-primary" type="submit">Save changes</button></div></form></dialog><dialog class="photo-lightbox" id="photo-lightbox"><button class="lightbox-close" id="photo-lightbox-close" type="button" aria-label="Close">×</button><img id="photo-lightbox-image" alt="Full-size uploaded photograph"></dialog><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/admin.js"></script>
 <script src="./pwa.js?v=3"></script>
-
-</body>
-</html>
+</body></html>
