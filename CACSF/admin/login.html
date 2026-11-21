@@ -15,119 +15,51 @@
 <link rel="stylesheet" href="admin.css">
 
 <style>
-.login-page{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(380px,.95fr);background:var(--bg)}
-.login-art{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(30px,5vw,72px);background:radial-gradient(circle at 78% 18%,#547d5d 0,transparent 30%),linear-gradient(145deg,#0d2b1e,#174d36 62%,#244d37);color:#fff}
-.login-art:after{content:"✦";position:absolute;font-size:360px;line-height:1;color:#ffffff09;right:-55px;bottom:-95px}
-.login-brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.12em;z-index:1}
-.login-brand-mark{width:43px;height:43px;display:grid;place-items:center;background:#d8eea0;color:#173b29;border-radius:14px;font-size:22px}
-.login-brand small{display:block;font-size:9px;letter-spacing:.2em;color:#b9cfbf;margin-top:4px}
-.art-copy{max-width:550px;z-index:1}
-.art-copy .eyebrow{color:#d8eea0}
-.art-copy h1{font-size:clamp(38px,5vw,64px);line-height:1.05;color:#fff;margin:15px 0}
-.art-copy p{color:#d1e0d5;font-size:14px;line-height:1.8;max-width:440px}
-.art-foot{font-size:10px;color:#b7cbbb;z-index:1}
-.login-side{display:grid;place-items:center;padding:35px 24px}
-.login-card{width:min(420px,100%)}
-.login-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:42px}
-.login-topline .eyebrow{color:var(--green2)}
-.login-card h2{font-family:Georgia,serif;font-size:34px;font-weight:500;margin:8px 0}
-.login-card>p{font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 27px}
-.login-form{display:grid;gap:16px}
-.login-form .control-label{font-size:10px}
-.password-wrap{display:flex;position:relative}
-.password-wrap input{width:100%;padding-right:60px}
-.password-show{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--green2);font-size:10px;font-weight:800;cursor:pointer}
-.login-submit{width:100%;padding:13px;margin-top:4px}
-.login-status{min-height:30px;font-size:11px;color:var(--danger);line-height:1.6}
-.login-status.success{color:var(--green2)}
-.login-links{display:flex;justify-content:space-between;gap:12px;margin-top:18px;font-size:10px;color:var(--muted)}
-.login-links button,.login-links a{border:0;background:none;color:var(--green2);font-weight:800;cursor:pointer;padding:0}
-.login-security{border-top:1px solid var(--line);margin-top:30px;padding-top:17px;font-size:9px;color:var(--muted);line-height:1.7}
-.login-theme{width:35px;height:35px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;cursor:pointer}
-.hidden{display:none!important}
-.install-app-button{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #b7cc9a;border-radius:10px;background:#edf5df;color:#174d36;font-size:11px;font-weight:850;cursor:pointer}
+.login-page{min-height:100vh;display:grid;place-items:center;padding:28px;background:var(--bg)}
+.login-art{display:none!important}
+.login-side{width:100%;display:grid;place-items:center;padding:24px}
+.login-card{width:min(420px,100%);padding:clamp(24px,4vw,38px);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.login-topline{display:flex;justify-content:flex-end;align-items:center;margin-bottom:25px}
+.login-card h2{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:30px;line-height:1.2;font-weight:750;letter-spacing:-.035em;margin:0 0 9px;color:var(--text)}
+.login-card>p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 25px}
+.login-form{display:grid;gap:16px}.login-form .control-label{font-size:11px}
+.password-wrap{display:flex;position:relative}.password-wrap input{width:100%;padding-right:60px}
+.password-show{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--green2);font-size:11px;font-weight:750;cursor:pointer}
+.login-submit{width:100%;min-height:44px;padding:13px;margin-top:4px}
+.login-status{min-height:22px;font-size:11px;color:var(--danger);line-height:1.5}.login-status.success{color:var(--green2)}
+.login-links{display:flex;justify-content:flex-start;gap:12px;margin-top:15px;font-size:11px;color:var(--muted)}
+.login-links button,.login-links a{border:0;background:none;color:var(--green2);font-weight:750;cursor:pointer;padding:0}
+.login-theme{width:35px;height:35px;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:9px;cursor:pointer}
+.hidden{display:none!important}.install-app-button{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #b7cc9a;border-radius:10px;background:#edf5df;color:#174d36;font-size:11px;font-weight:850;cursor:pointer}
 .install-app-button:hover{background:#dfeec9}
-@media(max-width:800px){
-.login-page{grid-template-columns:1fr}
-.login-art{min-height:270px;padding:25px 26px}
-.art-copy h1{font-size:38px;margin:9px 0}
-.art-copy p{font-size:11px;margin:0}
-.art-foot{display:none}
-.login-side{padding:35px 22px}
-.login-topline{margin-bottom:25px}
-}
+@media(max-width:520px){.login-page{padding:14px}.login-side{padding:8px}.login-card{padding:24px 20px}}
 </style>
 </head>
 
 <body data-admin-theme="light">
 
 <main class="login-page">
-
-<section class="login-art">
-<div class="login-brand">
-<span class="login-brand-mark">✦</span>
-<span>CACSF<small>ALUMNI FELLOWSHIP</small></span>
-</div>
-
-<div class="art-copy">
-<span class="eyebrow">ADMINISTRATOR ACCESS</span>
-<h1>Stewarding our<br>community legacy.</h1>
-<p>A secure workspace for managing alumni records, reunion memories and the projects that move our fellowship forward.</p>
-</div>
-
-<div class="art-foot">Faith · Fellowship · Service · Legacy</div>
-</section>
-
 <section class="login-side">
 <div class="login-card">
-
 <div class="login-topline">
-<span class="eyebrow">RESTRICTED WORKSPACE</span>
 <button class="login-theme" id="login-theme" type="button" aria-label="Toggle light and dark mode">☾</button>
 </div>
-
 <h2 id="page-heading">Welcome back.</h2>
-<p id="page-description">Sign in with your approved CACSF administrator account to continue.</p>
-
+<p id="page-description">Log in to your CACSF Admin Dashboard as an administrator.</p>
 <form id="admin-login" class="login-form">
-
-<label class="control-label" id="email-field">
-Email address
-<input class="text-input" type="email" name="email" id="login-email" placeholder="admin@example.com" autocomplete="username" required>
+<label class="control-label" id="email-field">Email address
+<input class="text-input" type="email" name="email" id="login-email" placeholder="Enter your email address" autocomplete="username" required>
 </label>
-
-<label class="control-label" id="password-field">
-Password
-<span class="password-wrap">
-<input class="text-input" id="login-password" type="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
-<button class="password-show" type="button" id="show-password">Show</button>
-</span>
+<label class="control-label" id="password-field">Password
+<span class="password-wrap"><input class="text-input" id="login-password" type="password" name="password" placeholder="Enter your password" autocomplete="current-password" required><button class="password-show" type="button" id="show-password">Show</button></span>
 </label>
-
-<label class="control-label hidden" id="confirm-field">
-Confirm password
-<span class="password-wrap">
-<input class="text-input" id="confirm-password" type="password" placeholder="Enter your password again" autocomplete="new-password">
-</span>
+<label class="control-label hidden" id="confirm-field">Confirm password
+<span class="password-wrap"><input class="text-input" id="confirm-password" type="password" placeholder="Enter your password again" autocomplete="new-password"></span>
 </label>
-
-<button class="button button-primary login-submit" type="submit" id="login-submit">
-Sign in to dashboard&nbsp; →
-</button>
-
+<button class="button button-primary login-submit" type="submit" id="login-submit">Log in</button>
 <p class="login-status" id="login-status" role="status" aria-live="polite"></p>
-
 </form>
-
-<div class="login-links" id="login-links">
-
-<button type="button" id="forgot-password">Forgot password?</button>
-</div>
-
-<div class="login-security">
-🔒 Your session is verified through Supabase Authentication. Access is limited to approved CACSF administrators.
-</div>
-
+<div class="login-links" id="login-links"><button type="button" id="forgot-password">Forgot password?</button></div>
 </div>
 </section>
 </main>
@@ -188,10 +120,10 @@ function setBusy(busy, label) {
 
   submitButton.textContent =
     currentMode === 'login'
-      ? 'Sign in to dashboard  →'
+      ? 'Log in'
       : currentMode === 'invite'
-        ? 'Create administrator password  →'
-        : 'Save new password  →';
+        ? 'Create password'
+        : 'Save password';
 }
 
 function setPasswordMode(mode) {
@@ -219,7 +151,7 @@ function setPasswordMode(mode) {
       ? 'Create a secure password to activate your CACSF administrator account.'
       : mode === 'recovery'
         ? 'Choose a new password for your CACSF administrator account.'
-        : 'Sign in with your approved CACSF administrator account to continue.';
+        : 'Log in to your CACSF Admin Dashboard as an administrator.';
 
   $('login-links').classList.toggle('hidden', mode !== 'login');
 
