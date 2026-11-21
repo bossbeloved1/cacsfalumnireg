@@ -208,3 +208,36 @@ td .action-link{margin:2px 3px 2px 0}
 .photo-lightbox img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;margin:0 auto}
 @media(max-width:760px){.welcome-band{padding:8px 0 17px;align-items:flex-start;flex-direction:column;gap:12px}.welcome-copy h1{font-size:29px}.welcome-actions{justify-content:flex-start}}
 @media(max-width:520px){.welcome-band{padding:7px 0 15px}.welcome-copy h1{font-size:26px}.details-grid .details-photo,.details-grid img.details-photo{width:104px;height:104px;max-width:104px;max-height:104px}.wedding-detail-photos img{width:104px;height:104px}}
+
+
+/* Dashboard recent-record selector and combined monthly activity */
+#page-overview .stat-card[data-dashboard-type]{cursor:pointer;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+#page-overview .stat-card[data-dashboard-type]:hover,#page-overview .stat-card[data-dashboard-type].selected{border-color:var(--green2);box-shadow:0 8px 24px rgba(18,59,42,.10);transform:translateY(-2px)}
+#page-overview .stat-card:focus-visible{outline:3px solid color-mix(in srgb,var(--green2) 35%,transparent);outline-offset:2px}
+#page-overview .dashboard-columns{align-items:stretch}
+#overview-months{display:grid;grid-template-columns:1fr;gap:9px}
+.snapshot-legend{display:flex;gap:18px;align-items:center;margin:0 0 3px;color:var(--muted);font-size:10px}
+.snapshot-legend span{display:inline-flex;align-items:center;gap:6px}
+.snapshot-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.snapshot-dot.birthday,.snapshot-bar.birthday{background:#7da65b}
+.snapshot-dot.wedding,.snapshot-bar.wedding{background:#d1ad54}
+.snapshot-month{display:grid;grid-template-columns:minmax(80px,1fr) minmax(60px,1.25fr) 22px minmax(60px,1.25fr) 22px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.snapshot-month:last-child{border-bottom:0}
+.snapshot-month-label{font-size:10px;color:var(--text);font-weight:700}
+.snapshot-track{height:7px;border-radius:20px;background:var(--surface2);overflow:hidden}
+.snapshot-bar{display:block;height:100%;min-width:0;border-radius:20px}
+.snapshot-month>b{font-size:10px;text-align:right;color:var(--muted)}
+.wedding-detail-photo-section{grid-column:1/-1;min-width:0;border:1px solid var(--line);border-radius:11px;padding:12px;background:var(--surface2)}
+.wedding-photo-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.wedding-photo-heading b{font-size:11px}.wedding-photo-heading span{font-size:9px;color:var(--muted)}
+.wedding-detail-photos{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px;max-width:100%;min-width:0}
+.wedding-detail-photos img,.wedding-edit-photo-preview img{display:block;width:104px;height:104px;max-width:104px;max-height:104px;object-fit:cover;object-position:center;border-radius:9px;border:1px solid var(--line);cursor:zoom-in}
+#wedding-details-dialog{overflow:auto;padding:20px}
+#wedding-details-content{margin-bottom:2px}
+#wedding-edit-dialog{overflow:auto;padding:20px}
+#wedding-edit-dialog form{padding:0}
+#wedding-edit-photo-preview{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);min-height:54px}
+#wedding-edit-photo-preview .muted{font-size:10px}
+#photo-lightbox{max-width:min(94vw,1100px);max-height:92vh;padding:42px 14px 14px;overflow:hidden}
+#photo-lightbox img{display:block;max-width:100%;max-height:calc(92vh - 70px);width:auto;height:auto;object-fit:contain;margin:auto}
+@media(max-width:700px){.snapshot-month{grid-template-columns:minmax(70px,.8fr) minmax(45px,1fr) 18px minmax(45px,1fr) 18px;gap:5px}.wedding-detail-photo-section{grid-column:1/-1}#wedding-details-dialog,#wedding-edit-dialog{width:calc(100vw - 18px);max-height:92vh;padding:15px}.wedding-detail-photos img,.wedding-edit-photo-preview img{width:88px;height:88px;max-width:88px;max-height:88px}}
