@@ -1957,6 +1957,56 @@
      OVERVIEW
      ========================================================== */
 
+  let dashboardRecentType = null;
+
+  function renderDashboardRecent(type) {
+    dashboardRecentType = type;
+    const body = $('recent-table');
+    const title = document.querySelector('#page-overview .recent-panel .panel-heading h2');
+    const subtitle = document.querySelector('#page-overview .recent-panel .panel-heading p');
+    const head = document.querySelector('#page-overview .recent-panel thead');
+    const viewAll = document.querySelector('#page-overview .recent-panel .text-link');
+    if (!body || !head) return;
+
+    const configs = {
+      birthdays: { title:'Recent birthday registrations', subtitle:'Newest alumni birthday registrations.', columns:['Name','Email','Graduation','Registered'], rows:alumni.slice().sort(dateSort).slice(0,8), route:'directory' },
+      weddings: { title:'Recent wedding registrations', subtitle:'Newest wedding anniversary registrations.', columns:['Couples','Wedding date','Email','Registered'], rows:weddings.slice().sort(dateSort).slice(0,8), route:'wedding-directory' },
+      media: { title:'Recent reunion media', subtitle:'Latest uploaded reunion media items.', columns:['Media','Category','Year','Added'], rows:media.slice().sort(dateSort).slice(0,8), route:'media' },
+      projects: { title:'Recent project gallery updates', subtitle:'Latest published project gallery items.', columns:['Project','Category','Year','Added'], rows:projects.slice().sort(dateSort).slice(0,8), route:'projects' },
+      messages: { title:'Recent contact messages', subtitle:'Latest messages received from the website.', columns:['Sender','Email','Subject','Received'], rows:messages.slice().sort(dateSort).slice(0,8), route:'messages' }
+    };
+    const cfg = configs[type];
+    if (!cfg) {
+      if (title) title.textContent = 'Recent registrations';
+      if (subtitle) subtitle.textContent = 'Select a dashboard card to view its latest records.';
+      head.innerHTML = '<tr><th>Latest records</th></tr>';
+      body.innerHTML = '<tr><td class="empty-cell" colspan="1">Select a dashboard card to view recent records.</td></tr>';
+      if (viewAll) viewAll.hidden = true;
+      document.querySelectorAll('#page-overview .stat-card[data-dashboard-type]').forEach(c=>{c.classList.remove('selected');c.setAttribute('aria-pressed','false');});
+      return;
+    }
+    if (title) title.textContent = cfg.title;
+    if (subtitle) subtitle.textContent = cfg.subtitle;
+    head.innerHTML = `<tr>${cfg.columns.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>`;
+    if (viewAll) { viewAll.hidden = false; viewAll.href = `#${cfg.route}`; viewAll.textContent = 'View all →'; }
+    const rows = cfg.rows;
+    if (!rows.length) {
+      const empty = type === 'birthdays' ? 'No recent birthday registrations found.' : type === 'weddings' ? 'No recent wedding registrations found.' : type === 'media' ? 'No reunion media files available yet.' : type === 'projects' ? 'No project files available yet.' : 'No contact messages received yet.';
+      body.innerHTML = `<tr><td class="empty-cell" colspan="${cfg.columns.length}">${empty}</td></tr>`;
+    } else {
+      body.innerHTML = rows.map(r => {
+        let cells;
+        if (type === 'birthdays') cells=[fullName(r),r.email||'—',r.graduation_year||'—',fmtDate(r.created_at)];
+        else if (type === 'weddings') cells=[r.couple_name||'Unnamed couple',fmtDate(r.wedding_date),r.email||'—',fmtDate(r.created_at)];
+        else if (type === 'media') cells=[r.caption||(r.category==='videos'?'Reunion video':'CACSF media'),r.category||'—',r.year||'—',fmtDate(r.created_at)];
+        else if (type === 'projects') cells=[r.caption||'Project update',r.category||'—',r.year||'—',fmtDate(r.created_at)];
+        else cells=[r.name||'—',r.email||'—',r.subject||'—',fmtDate(r.created_at)];
+        return `<tr>${cells.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`;
+      }).join('');
+    }
+    document.querySelectorAll('#page-overview .stat-card[data-dashboard-type]').forEach(c=>{const selected=c.dataset.dashboardType===type;c.classList.toggle('selected',selected);c.setAttribute('aria-pressed',String(selected));});
+  }
+
   function renderOverview() {
     $('alumni-count').textContent = alumni.length;
     if (has('main-wedding-count')) $('main-wedding-count').textContent = weddings.length;
@@ -1964,66 +2014,33 @@
     $('project-count').textContent = projects.length;
     $('message-count').textContent = messages.length;
     if (has('wedding-count-stat')) $('wedding-count-stat').textContent = weddings.length;
+    renderDashboardRecent(dashboardRecentType);
 
-    const recent = [...alumni]
-      .sort(dateSort)
-      .slice(0, 8);
-
-    $('recent-table').innerHTML = recent.length
-      ? recent.map(r => `
-          <tr>
-            <td>${esc(fullName(r))}</td>
-            <td>${esc(r.email || '—')}</td>
-            <td>${esc(r.graduation_year || '—')}</td>
-            <td>${esc(fmtDate(r.created_at))}</td>
-          </tr>
-        `).join('')
-      : `
-          <tr>
-            <td colspan="4" class="empty-cell">
-              No alumni registrations found.
-            </td>
-          </tr>
-        `;
-
-    const counts = {};
-
-    alumni.forEach(r => {
-      const key = monthKey(r.created_at);
-
-      if (key !== 'Unknown') {
-        counts[key] = (counts[key] || 0) + 1;
-      }
-    });
-
-    const keys = Object.keys(counts)
-      .sort()
-      .reverse()
-      .slice(0, 8);
-
-    $('overview-months').innerHTML = keys.length
-      ? keys.map(k => `
-          <button
-            class="mini-month"
-            type="button"
-            data-overview-month="${k}"
-          >
-            <span>${esc(monthName(k))}</span>
-            <b>${counts[k]}</b>
-            <span>registrations</span>
-          </button>
-        `).join('')
-      : '<div class="empty-cell">No dated registrations yet.</div>';
-
-    document
-      .querySelectorAll('[data-overview-month]')
-      .forEach(btn => {
-        btn.addEventListener('click', () => {
-          navigate('monthly');
-          selectMonth(btn.dataset.overviewMonth);
-        });
-      });
+    const now = new Date();
+    const months = [];
+    for (let offset=5; offset>=0; offset--) {
+      const d = new Date(now.getFullYear(), now.getMonth()-offset, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const birthdayCount = alumni.filter(r=>monthKey(r.created_at)===key).length;
+      const weddingCount = weddings.filter(r=>monthKey(r.created_at)===key).length;
+      months.push({label:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}),birthdayCount,weddingCount});
+    }
+    const host=$('overview-months');
+    if (host) host.innerHTML = `<div class="snapshot-legend"><span><i class="snapshot-dot birthday"></i> Birthday</span><span><i class="snapshot-dot wedding"></i> Wedding</span></div>` + months.map(m=>`<div class="snapshot-month"><div class="snapshot-month-label">${esc(m.label)}</div><div class="snapshot-track"><span class="snapshot-bar birthday" style="width:${m.birthdayCount?Math.max(5,Math.min(100,m.birthdayCount/Math.max(1,...months.map(x=>x.birthdayCount))*100)):0}%"></span></div><b>${m.birthdayCount}</b><div class="snapshot-track"><span class="snapshot-bar wedding" style="width:${m.weddingCount?Math.max(5,Math.min(100,m.weddingCount/Math.max(1,...months.map(x=>x.weddingCount))*100)):0}%"></span></div><b>${m.weddingCount}</b></div>`).join('') + (months.every(m=>!m.birthdayCount&&!m.weddingCount)?'<div class="empty-cell">No registration activity available.</div>':'');
   }
+
+  document.querySelectorAll('#page-overview .stat-card[data-dashboard-type]').forEach(card=>{
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-pressed','false');
+  });
+  document.querySelector('#page-overview')?.addEventListener('click',e=>{
+    const card=e.target.closest('.stat-card[data-dashboard-type]');
+    if(card) renderDashboardRecent(card.dataset.dashboardType);
+  });
+  document.querySelector('#page-overview')?.addEventListener('keydown',e=>{
+    if((e.key==='Enter'||e.key===' ')&&e.target.matches('.stat-card[data-dashboard-type]')){e.preventDefault();renderDashboardRecent(e.target.dataset.dashboardType);}
+  });
 
   /* ==========================================================
      ALUMNI DIRECTORY
@@ -3756,8 +3773,8 @@
   document.addEventListener('click',async event=>{
     const photo=event.target.closest('[data-wedding-photos]'),del=event.target.closest('[data-delete-wedding]'),edit=event.target.closest('[data-wedding-edit]'),view=event.target.closest('[data-wedding-view]');
     if(photo){const r=weddings.find(x=>String(x.id)===String(photo.dataset.weddingPhotos));if(!r)return;const links=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const usable=links.filter(Boolean);if(!usable.length){alert('No accessible wedding photos found.');return;}const content=$('wedding-photos-content');if(content)content.innerHTML=usable.map((u,i)=>`<a class="wedding-photo-link" href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="Wedding photo ${i+1}"><span>Open photo ${i+1} ↗</span></a>`).join('');$('wedding-photos-dialog')?.showModal();return;}
-    if(view){const r=weddings.find(x=>String(x.id)===String(view.dataset.weddingView));if(!r)return;const photos=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const usable=photos.filter(Boolean);const html=`<div class="detail-card"><small>Couples' names</small><b>${esc(r.couple_name||'—')}</b></div><div class="detail-card"><small>Wedding date</small><b>${esc(fmtDate(r.wedding_date))}</b></div><div class="detail-card"><small>Email</small><b>${esc(r.email||'—')}</b></div><div class="detail-card"><small>Years together</small><b>${esc(weddingYears(r.wedding_date))}</b></div><div class="detail-card"><small>Registered</small><b>${esc(fmtDate(r.created_at))}</b></div><div class="wedding-detail-photos">${usable.length?usable.map((u,i)=>`<img src="${esc(u)}" alt="Wedding photograph ${i+1}" data-open-lightbox="${esc(u)}">`).join(''):'<span class="muted">No photographs uploaded.</span>'}</div>`;const c=$('wedding-details-content');if(c)c.innerHTML=html;$('wedding-details-dialog')?.showModal();return;}
-    if(edit){if(!isSuperAdmin){alert('Only a Super Administrator can edit wedding registrations.');return;}const r=weddings.find(x=>String(x.id)===String(edit.dataset.weddingEdit));if(!r)return;const f=$('wedding-edit-form');f.elements.id.value=r.id;f.elements.couple_name.value=r.couple_name||'';f.elements.wedding_date.value=r.wedding_date||'';f.elements.email.value=r.email||'';f.elements.email.readOnly=true;const previews=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const box=$('wedding-edit-photo-preview');if(box)box.innerHTML=previews.filter(Boolean).map((u,i)=>`<img src="${esc(u)}" alt="Current wedding photo ${i+1}" data-open-lightbox="${esc(u)}">`).join('')||'<span class="muted">No existing photographs.</span>';say('wedding-edit-status','');$('wedding-edit-dialog')?.showModal();return;}
+    if(view){const r=weddings.find(x=>String(x.id)===String(view.dataset.weddingView));if(!r)return;const photos=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const usable=photos.filter(Boolean);const html=`<div class="detail-cell"><small>Couples' names</small><b>${esc(r.couple_name||'—')}</b></div><div class="detail-cell"><small>Wedding date</small><b>${esc(fmtDate(r.wedding_date))}</b></div><div class="detail-cell"><small>Email address</small><b>${esc(r.email||'—')}</b></div><div class="detail-cell"><small>Registered</small><b>${esc(fmtDate(r.created_at))}</b></div><section class="wedding-detail-photo-section"><div class="wedding-photo-heading"><b>Uploaded photographs</b><span>${usable.length} photo${usable.length===1?'':'s'}</span></div><div class="wedding-detail-photos">${usable.length?usable.map((u,i)=>`<img src="${esc(u)}" alt="Wedding photograph ${i+1}" data-open-lightbox="${esc(u)}">`).join(''):'<span class="muted">No photographs uploaded.</span>'}</div></section>`;const c=$('wedding-details-content');if(c)c.innerHTML=html;$('wedding-details-dialog')?.showModal();return;}
+    if(edit){if(!isSuperAdmin){alert('Only a Super Administrator can edit wedding registrations.');return;}const r=weddings.find(x=>String(x.id)===String(edit.dataset.weddingEdit));if(!r)return;const f=$('wedding-edit-form');f.reset();f.elements.id.value=r.id;f.elements.couple_name.value=r.couple_name||'';f.elements.wedding_date.value=r.wedding_date||'';f.elements.email.value=r.email||'';f.elements.email.readOnly=true;const previews=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const box=$('wedding-edit-photo-preview');if(box)box.innerHTML=previews.filter(Boolean).map((u,i)=>`<img src="${esc(u)}" alt="Current wedding photo ${i+1}" data-open-lightbox="${esc(u)}">`).join('')||'<span class="muted">No existing photographs.</span>';say('wedding-edit-status','');$('wedding-edit-dialog')?.showModal();return;}
     if(del){if(!isSuperAdmin)return;const id=del.dataset.deleteWedding,r=weddings.find(x=>String(x.id)===String(id));if(!r||!confirm(`Delete the wedding registration for ${weddingName(r)}? This cannot be undone.`))return;setBusy(del,true,'Deleting…');try{const {error}=await client.from('wedding_registrations').delete().eq('id',id);if(error)throw error;for(const path of weddingPhotoPaths(r)){const {error:se}=await client.storage.from(WEDDING_BUCKET).remove([path]);if(se)console.warn(se.message);}weddings=weddings.filter(x=>String(x.id)!==String(id));renderWeddings();renderWeddingOverview();renderWeddingMonthGrid();renderAnniversaries();await audit('wedding_registration_deleted','wedding_registrations',id,{couple_name:r.couple_name||''});say('wedding-status','Wedding registration deleted.','success');}catch(err){alert(`Could not delete wedding registration: ${err.message}`);setBusy(del,false);}}
   });
   $('close-wedding-photos')?.addEventListener('click',()=>$('wedding-photos-dialog')?.close());$('wedding-photos-close-button')?.addEventListener('click',()=>$('wedding-photos-dialog')?.close());
