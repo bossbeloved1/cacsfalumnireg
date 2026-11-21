@@ -1,1 +1,499 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Register with the CACSF Alumni Fellowship so we can celebrate your birthday and stay connected.">
+
+<title>CACSF Alumni Registration</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logoextension.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/logoextension.png">
+
+<link rel="stylesheet" href="assets/css/style.css">
+
+<style>
+/* Birthday photograph preview */
+.birthday-photo-preview-button {
+  display: none;
+  width: 125px;
+  height: 125px;
+  margin-top: 15px;
+  padding: 5px;
+  border: 2px solid #d7d7d7;
+  border-radius: 50%;
+  background: #fff;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.birthday-photo-preview-button.visible {
+  display: block;
+}
+
+.birthday-photo-preview-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.birthday-photo-preview-hint {
+  display: none;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: .75;
+}
+
+.birthday-photo-preview-hint.visible {
+  display: block;
+}
+
+/* Full photograph preview */
+#birthday-photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .88);
+}
+
+#birthday-photo-lightbox.open {
+  display: flex;
+}
+
+#birthday-photo-lightbox .birthday-lightbox-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#birthday-photo-lightbox img {
+  display: block;
+  max-width: 95%;
+  max-height: 88vh;
+  max-height: 88dvh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 15px 60px rgba(0,0,0,.4);
+}
+
+#birthday-photo-lightbox .birthday-lightbox-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 2;
+  width: 43px;
+  height: 43px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255,255,255,.18);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#birthday-photo-lightbox .birthday-lightbox-close:hover {
+  background: rgba(255,255,255,.3);
+}
+
+@media(max-width: 600px) {
+  .birthday-photo-preview-button {
+    width: 115px;
+    height: 115px;
+  }
+
+  #birthday-photo-lightbox {
+    padding: 12px;
+  }
+
+  #birthday-photo-lightbox img {
+    max-width: 100%;
+    max-height: 84vh;
+    max-height: 84dvh;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="logo-intro" id="logo-intro" aria-label="CACSF Alumni Fellowship">
+    <div class="logo-intro-inner">
+        <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+
+        <div class="intro-animated-text">
+            <div class="intro-cacsf">CACSF</div>
+            <div class="intro-line intro-line-one">ALUMNI FELLOWSHIP</div>
+            <div class="intro-line intro-line-two">FEDERAL POLYTECHNIC ADO EKITI</div>
+        </div>
+    </div>
+</div>
+
+<header class="register-header">
+  <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship home">
+    <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+    <span>CACSF <small>ALUMNI FELLOWSHIP</small></span>
+  </a>
+
+  <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
+</header>
+
+<main class="registration-main">
+
+  <section class="registration-intro" aria-labelledby="registration-title">
+    <div class="intro-kicker"><span class="kicker-dot"></span> CACSF ALUMNI FELLOWSHIP</div>
+
+    <h1 id="registration-title">Let us celebrate <em>you.</em></h1>
+    <h2>Your story is part of <em>our story.</em></h2>
+
+    <p class="intro-support">
+      Share your birthday with the CACSF family, so we can celebrate you.
+    </p>
+
+    <div class="instruction-card">
+      <span class="instruction-icon" aria-hidden="true">✦</span>
+      <p>
+        Complete the form and your details will be sent to the alumni administrators.
+        Please upload a clear birthday photograph (JPG, JPEG, PNG or GIF; maximum 20MB).
+      </p>
+    </div>
+  </section>
+
+  <section class="registration-form-wrap" aria-label="Alumni registration form">
+
+    <form id="alumni-form" class="site-form registration-form">
+
+      <div class="form-heading">
+        <span class="form-step">FILL IN YOUR DETAILS</span>
+        <h3>Tell us about yourself</h3>
+        <p>Fields marked with <b>*</b> are required.</p>
+      </div>
+
+      <div class="form-grid">
+
+        <label>
+          <span class="field-label">Title <span class="required-mark">*</span></span>
+
+          <select name="alias" id="alumni-title" required>
+            <option value="">Select title</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Brother">Brother</option>
+            <option value="Sister">Sister</option>
+            <option value="Comrade">Comrade</option>
+            <option value="Chief">Chief</option>
+            <option value="Dr.">Dr.</option>
+            <option value="Engr.">Engr.</option>
+            <option value="Pastor">Pastor</option>
+            <option value="Reverend">Reverend</option>
+            <option value="Prophet">Prophet</option>
+            <option value="Prof.">Prof.</option>
+            <option value="Others">Others</option>
+          </select>
+
+          <input
+            type="text"
+            id="custom-alumni-title"
+            name="custom_alias"
+            placeholder="Enter your title"
+            autocomplete="off"
+            maxlength="60"
+            hidden
+            disabled
+          >
+        </label>
+
+        <label>
+          <span class="field-label" id="graduation-label">
+            Graduation year <span class="required-mark">*</span>
+          </span>
+
+          <select name="graduation_year" id="graduation-year" required>
+            <option value="">Select year</option>
+            <option value="1995/1996">1995/1996</option>
+            <option value="1996/1997">1996/1997</option>
+            <option value="1997/1998">1997/1998</option>
+            <option value="1998/1999">1998/1999</option>
+            <option value="1999/2000">1999/2000</option>
+            <option value="2000/2001">2000/2001</option>
+            <option value="2001/2002">2001/2002</option>
+            <option value="2002/2003">2002/2003</option>
+            <option value="2003/2004">2003/2004</option>
+            <option value="2004/2005">2004/2005</option>
+            <option value="2005/2006">2005/2006</option>
+            <option value="2006/2007">2006/2007</option>
+            <option value="2007/2008">2007/2008</option>
+            <option value="2008/2009">2008/2009</option>
+            <option value="2009/2010">2009/2010</option>
+            <option value="2010/2011">2010/2011</option>
+            <option value="2011/2012">2011/2012</option>
+            <option value="2012/2013">2012/2013</option>
+            <option value="2013/2014">2013/2014</option>
+            <option value="2014/2015">2014/2015</option>
+            <option value="2015/2016">2015/2016</option>
+            <option value="2016/2017">2016/2017</option>
+            <option value="2017/2018">2017/2018</option>
+            <option value="2018/2019">2018/2019</option>
+            <option value="2019/2020">2019/2020</option>
+            <option value="2020/2021">2020/2021</option>
+            <option value="2021/2022">2021/2022</option>
+            <option value="2022/2023">2022/2023</option>
+            <option value="2023/2024">2023/2024</option>
+            <option value="2024/2025">2024/2025</option>
+            <option value="2025/2026">2025/2026</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="field-label">First name <span class="required-mark">*</span></span>
+          <input name="first_name" required autocomplete="given-name" placeholder="Enter your first name">
+        </label>
+
+        <label>
+          <span class="field-label">Surname <span class="required-mark">*</span></span>
+          <input name="surname" required autocomplete="family-name" placeholder="Enter your surname">
+        </label>
+
+        <label>
+          <span class="field-label">Email address <span class="required-mark">*</span></span>
+          <input type="email" name="email" required autocomplete="email" placeholder="you@example.com">
+        </label>
+
+        <label>
+          <span class="field-label">Birthday month <span class="required-mark">*</span></span>
+          <select name="birth_month" required>
+            <option value="">Select month</option>
+            <option>January</option>
+            <option>February</option>
+            <option>March</option>
+            <option>April</option>
+            <option>May</option>
+            <option>June</option>
+            <option>July</option>
+            <option>August</option>
+            <option>September</option>
+            <option>October</option>
+            <option>November</option>
+            <option>December</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="field-label">Birthday day <span class="required-mark">*</span></span>
+          <select name="birth_day" required>
+            <option value="">Select day</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="field-label">Phone number <span class="required-mark">*</span></span>
+          <input name="phone" type="tel" required autocomplete="tel" placeholder="Enter your phone number">
+        </label>
+
+        <label class="full upload-field">
+          <span class="field-label">Birthday photograph <span class="required-mark">*</span></span>
+
+          <input
+            id="birthday-photo-input"
+            name="photo"
+            type="file"
+            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+            required
+          >
+
+          <small>JPG, JPEG, PNG or GIF · Maximum file size 20MB</small>
+
+          <button
+            type="button"
+            id="birthday-photo-preview-button"
+            class="birthday-photo-preview-button"
+            aria-label="Preview your birthday photograph"
+            title="Click to view the full photograph"
+          >
+            <img id="birthday-photo-preview-image" src="" alt="Selected birthday photograph preview">
+          </button>
+
+          <small id="birthday-photo-preview-hint" class="birthday-photo-preview-hint">
+            Click the photograph to view the full image.
+          </small>
+        </label>
+
+        <label class="full">
+          Profession / Occupation <small class="optional-label">Optional</small>
+          <input name="profession" placeholder="e.g. Engineer, Teacher, Entrepreneur">
+        </label>
+
+        <label class="full check-label">
+          <input type="checkbox" name="consent" required>
+          I agree that CACSF Alumni Fellowship may use these details to celebrate my birthday and communicate alumni updates.
+        </label>
+
+      </div>
+
+      <button class="btn btn-primary registration-submit" type="submit">
+        SUBMIT MY DETAILS <span aria-hidden="true">↗</span>
+      </button>
+
+      <p class="form-status" id="alumni-status" role="status" aria-live="polite"></p>
+
+    </form>
+  </section>
+
+  <p class="correction-link">
+    Already registered but made a mistake?
+    <a href="correction.html">Correct My Registration</a>
+  </p>
+
+  <div class="registration-footnote">
+    <img src="assets/cacsf-logo.png" alt="CACSF logo">
+    <span>CACSF..... LIBERATION FAMILY</span>
+  </div>
+
+</main>
+
+<!-- Full-size photograph preview on the same page -->
+<div id="birthday-photo-lightbox" role="dialog" aria-modal="true" aria-label="Birthday photograph full preview">
+  <div class="birthday-lightbox-content">
+    <button
+      type="button"
+      class="birthday-lightbox-close"
+      id="birthday-photo-lightbox-close"
+      aria-label="Close photograph preview"
+    >×</button>
+
+    <img id="birthday-photo-lightbox-image" src="" alt="Full birthday photograph preview">
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/supabase.js"></script>
+
+<script>
+/* =========================================
+   BIRTHDAY PHOTOGRAPH PREVIEW
+========================================= */
+
+(() => {
+  const photoInput = document.getElementById("birthday-photo-input");
+  const previewButton = document.getElementById("birthday-photo-preview-button");
+  const previewImage = document.getElementById("birthday-photo-preview-image");
+  const previewHint = document.getElementById("birthday-photo-preview-hint");
+
+  const lightbox = document.getElementById("birthday-photo-lightbox");
+  const lightboxImage = document.getElementById("birthday-photo-lightbox-image");
+  const closeButton = document.getElementById("birthday-photo-lightbox-close");
+
+  if (!photoInput || !previewButton || !previewImage || !lightbox || !lightboxImage) {
+    return;
+  }
+
+  let currentPhotoUrl = null;
+
+  function clearPhotoPreview() {
+    previewButton.classList.remove("visible");
+    previewHint?.classList.remove("visible");
+
+    previewImage.removeAttribute("src");
+    lightboxImage.removeAttribute("src");
+
+    if (currentPhotoUrl) {
+      URL.revokeObjectURL(currentPhotoUrl);
+      currentPhotoUrl = null;
+    }
+
+    lightbox.classList.remove("open");
+  }
+
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files && photoInput.files[0];
+
+    clearPhotoPreview();
+
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+    const maxSize = 20 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Please select a JPG, JPEG, PNG or GIF photograph.");
+      photoInput.value = "";
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert("Your birthday photograph must not exceed 20MB.");
+      photoInput.value = "";
+      return;
+    }
+
+    currentPhotoUrl = URL.createObjectURL(file);
+
+    previewImage.src = currentPhotoUrl;
+    lightboxImage.src = currentPhotoUrl;
+
+    previewButton.classList.add("visible");
+    previewHint?.classList.add("visible");
+  });
+
+  function openFullPreview() {
+    if (!currentPhotoUrl) return;
+
+    lightbox.classList.add("open");
+    closeButton?.focus();
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeFullPreview() {
+    lightbox.classList.remove("open");
+    document.body.style.overflow = "";
+    previewButton.focus();
+  }
+
+  previewButton.addEventListener("click", openFullPreview);
+
+  closeButton?.addEventListener("click", closeFullPreview);
+
+  lightbox.addEventListener("click", event => {
+    if (event.target === lightbox) {
+      closeFullPreview();
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && lightbox.classList.contains("open")) {
+      closeFullPreview();
+    }
+  });
+
+  // Remove the old preview when the form is successfully reset.
+  document.getElementById("alumni-form")?.addEventListener("reset", () => {
+    setTimeout(clearPhotoPreview, 0);
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (currentPhotoUrl) {
+      URL.revokeObjectURL(currentPhotoUrl);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
+
