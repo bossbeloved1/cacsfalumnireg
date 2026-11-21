@@ -1,1 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Securely correct your CACSF Alumni Fellowship wedding registration details.">
+  <title>Correct Wedding Registration | CACSF Alumni Fellowship</title>
 
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logoextension.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/logoextension.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    .correction-hidden { display:none !important; }
+    .correction-status { min-height:18px; margin:13px 0 0; font-size:12px; line-height:1.6; color:var(--reg-green-dark,#137c3b); }
+    .correction-status.error { color:#c43d32; }
+    .correction-status.success { color:var(--reg-green-dark,#137c3b); }
+    .otp-input { text-align:center; font-size:23px !important; font-weight:800; letter-spacing:.42em; padding-left:.42em !important; }
+    .correction-secondary-button { width:100%; min-height:42px; margin-top:10px; padding:10px 14px; border:1px solid var(--reg-line,#dce9dc); border-radius:10px; background:transparent; color:var(--reg-text,#102d20); font:700 11px Manrope,sans-serif; cursor:pointer; }
+    .correction-secondary-button:disabled { opacity:.55; cursor:not-allowed; }
+    .current-photo-note { display:block; margin-top:7px; color:var(--reg-muted); font-size:10px; line-height:1.6; }
+    .wedding-photo-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .wedding-photo-card { min-width:0; padding:14px; border:1px solid var(--reg-line,#dce9dc); border-radius:12px; background:rgba(255,255,255,.24); }
+    .wedding-photo-card h4 { margin:0 0 10px; color:var(--reg-text); font:800 12px Manrope,sans-serif; }
+    .correction-photo-preview { display:block; width:auto; height:auto; max-width:100%; max-height:300px; object-fit:contain; object-position:center; border-radius:8px; border:1px solid var(--reg-line,#dce9dc); background:transparent; cursor:zoom-in; }
+    .correction-photo-preview[hidden] { display:none !important; }
+    .correction-photo-copy { color:var(--reg-muted); font-size:11px; line-height:1.7; }
+    .correction-photo-copy strong { display:block; margin-bottom:5px; color:var(--reg-text); }
+    .photo-choose-button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; margin-top:12px; padding:10px 16px; border:1px solid var(--reg-green-dark,#137c3b); border-radius:8px; background:var(--reg-green-dark,#137c3b); color:#fff; font:700 11px Manrope,sans-serif; cursor:pointer; }
+    .photo-file-input { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .photo-preview-hint { display:block; margin-top:8px; color:var(--reg-muted); font-size:10px; }
+    .photo-lightbox { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,.88); }
+    .photo-lightbox[hidden] { display:none !important; }
+    .photo-lightbox img { display:block; max-width:95vw; max-height:88vh; width:auto; height:auto; object-fit:contain; border-radius:6px; }
+    .photo-lightbox-close { position:absolute; top:18px; right:22px; width:42px; height:42px; border:1px solid rgba(255,255,255,.55); border-radius:50%; background:rgba(0,0,0,.45); color:#fff; font-size:26px; cursor:pointer; }
+    .readonly-field { opacity:.82; }
+    .registration-intro h1 { white-space:nowrap; font-size:clamp(2.5rem,4vw,3.8rem); line-height:1.15; width:100%; text-align:center; }
+    @media (max-width:700px) { .wedding-photo-grid { grid-template-columns:1fr; } }
+    @media (max-width:600px) { .registration-intro h1 { font-size:clamp(1.7rem,8vw,2.4rem); } }
+    .back-home-link { display:block; width:fit-content; margin:22px auto 0; padding:11px 20px; border:1px solid var(--reg-line,#dce9dc); border-radius:8px; color:var(--reg-text,#102d20); text-decoration:none; font:700 12px Manrope,sans-serif; text-align:center; transition:background .2s ease,transform .2s ease; }
+    .back-home-link:hover { transform:translateY(-2px); }
+  </style>
+</head>
+
+<body>
+  <header class="register-header">
+    <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship homepage">
+      <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+      <span>CACSF <small>ALUMNI FELLOWSHIP</small></span>
+    </a>
+    <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
+  </header>
+
+  <main class="registration-main">
+    <section class="registration-intro" aria-labelledby="correction-title">
+      <div class="intro-kicker"><span class="kicker-dot"></span> CACSF ALUMNI FELLOWSHIP</div>
+      <h1 id="correction-title">Correct your <em>wedding details.</em></h1>
+      <p class="intro-support">Keep your wedding anniversary registration accurate and up to date.</p>
+      <div class="instruction-card">
+        <span class="instruction-icon" aria-hidden="true">✦</span>
+        <p>Enter the email address used for your wedding registration. A six-digit verification code will be sent to that email. The code expires after 10 minutes.</p>
+      </div>
+    </section>
+
+    <section class="registration-form-wrap" id="request-section" aria-label="Request email verification code">
+      <form id="request-form" class="site-form registration-form">
+        <div class="form-heading">
+          <span class="form-step">STEP 01 · EMAIL VERIFICATION</span>
+          <h3>Find your wedding registration</h3>
+          <p>Use the email address submitted with your wedding details.</p>
+        </div>
+        <div class="form-grid">
+          <label class="full">
+            <span class="field-label">Registered email address <span class="required-mark">*</span></span>
+            <input type="email" id="request-email" name="email" required autocomplete="email" placeholder="Enter your registered email">
+          </label>
+        </div>
+        <button class="btn btn-primary registration-submit" id="request-button" type="submit">SEND VERIFICATION CODE <span aria-hidden="true">↗</span></button>
+        <p class="correction-status" id="request-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="registration-form-wrap correction-hidden" id="otp-section" aria-label="Verify email code">
+      <form id="otp-form" class="site-form registration-form">
+        <div class="form-heading">
+          <span class="form-step">STEP 02 · ENTER YOUR CODE</span>
+          <h3>Check your email</h3>
+          <p id="otp-destination">Enter the six-digit code sent to your registered email address.</p>
+        </div>
+        <div class="form-grid">
+          <label class="full">
+            <span class="field-label">Six-digit verification code <span class="required-mark">*</span></span>
+            <input class="otp-input" type="text" id="otp-code" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required placeholder="000000" aria-label="Six-digit verification code">
+            <small>Check your inbox and spam folder. The code is valid for 10 minutes.</small>
+          </label>
+        </div>
+        <button class="btn btn-primary registration-submit" id="verify-otp-button" type="submit">VERIFY CODE <span aria-hidden="true">↗</span></button>
+        <button class="correction-secondary-button" id="resend-otp-button" type="button">Resend verification code</button>
+        <button class="correction-secondary-button" id="change-email-button" type="button">Use a different email address</button>
+        <p class="correction-status" id="otp-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="registration-form-wrap correction-hidden" id="correction-section" aria-label="Correct wedding registration details">
+      <form id="correction-form" class="site-form registration-form">
+        <div class="form-heading">
+          <span class="form-step">STEP 03 · UPDATE YOUR DETAILS</span>
+          <h3>Wedding registration details</h3>
+          <p>Review the information below. Fields marked with <b>*</b> are required.</p>
+        </div>
+        <div class="form-grid">
+          <label class="full">
+            <span class="field-label">Couple's name <span class="required-mark">*</span></span>
+            <input type="text" id="couple-name" name="couple_name" required maxlength="160" placeholder="Enter both names as registered">
+          </label>
+          <label>
+            <span class="field-label">Wedding date <span class="required-mark">*</span></span>
+            <input type="date" id="wedding-date" name="wedding_date" required>
+          </label>
+          <label>
+            <span class="field-label">Email address</span>
+            <input class="readonly-field" type="email" id="email" name="email" readonly aria-readonly="true">
+          </label>
+
+          <div class="full">
+            <span class="field-label">Wedding photographs <small class="optional-label">Optional</small></span>
+            <div class="instruction-card" style="margin:0;display:block">
+              <p style="margin:0 0 12px">You can keep your existing photographs or replace either image. If your registration uses one combined couple photograph, it will appear in the first slot.</p>
+              <div class="wedding-photo-grid">
+                <div class="wedding-photo-card">
+                  <h4>PHOTO 1 · COUPLE / PARTNER 1</h4>
+                  <button type="button" id="photo-one-preview-button" class="correction-hidden" style="padding:0;border:0;background:transparent;max-width:100%" aria-label="Preview first wedding photograph">
+                    <img id="photo-one-preview" class="correction-photo-preview" src="" alt="First wedding photograph preview" hidden>
+                  </button>
+                  <div class="correction-photo-copy">
+                    <strong id="photo-one-status-title">First wedding photograph</strong>
+                    <span id="photo-one-status-text">Add or replace the first wedding photograph.</span><br>
+                    <button type="button" class="photo-choose-button" id="choose-photo-one-button">Choose Photo 1</button>
+                  </div>
+                  <input class="photo-file-input" type="file" id="photo-one" accept="image/jpeg,image/png,image/webp" aria-label="Choose first wedding photograph">
+                </div>
+                <div class="wedding-photo-card">
+                  <h4>PHOTO 2 · PARTNER 2 (OPTIONAL)</h4>
+                  <button type="button" id="photo-two-preview-button" class="correction-hidden" style="padding:0;border:0;background:transparent;max-width:100%" aria-label="Preview second wedding photograph">
+                    <img id="photo-two-preview" class="correction-photo-preview" src="" alt="Second wedding photograph preview" hidden>
+                  </button>
+                  <div class="correction-photo-copy">
+                    <strong id="photo-two-status-title">Second wedding photograph</strong>
+                    <span id="photo-two-status-text">Add or replace the second photograph if your registration has one.</span><br>
+                    <button type="button" class="photo-choose-button" id="choose-photo-two-button">Choose Photo 2</button>
+                  </div>
+                  <input class="photo-file-input" type="file" id="photo-two" accept="image/jpeg,image/png,image/webp" aria-label="Choose second wedding photograph">
+                </div>
+              </div>
+              <small class="current-photo-note">JPG, JPEG, PNG or WebP · Maximum file size 20MB per image. Leave a photo unchanged to keep the existing file.</small>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary registration-submit" id="update-button" type="submit">SAVE CORRECTIONS <span aria-hidden="true">↗</span></button>
+        <p class="correction-status" id="correction-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <a class="back-home-link" href="index.html">← Back to Homepage</a>
+    <div class="registration-footnote">
+      <img src="assets/cacsf-logo.png" alt="CACSF logo">
+      <span>CACSF..... LIBERATION FAMILY</span>
+    </div>
+  </main>
+
+  <div class="photo-lightbox" id="photo-lightbox" role="dialog" aria-modal="true" aria-label="Wedding photograph preview" hidden>
+    <button type="button" class="photo-lightbox-close" id="close-photo-lightbox" aria-label="Close picture preview">×</button>
+    <img id="photo-lightbox-image" src="" alt="Enlarged wedding photograph">
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/supabase.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const FUNCTION_NAME = "cacsf-wedding-correction";
+      const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
+      const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+      const requestSection = document.getElementById("request-section");
+      const otpSection = document.getElementById("otp-section");
+      const correctionSection = document.getElementById("correction-section");
+      const requestForm = document.getElementById("request-form");
+      const otpForm = document.getElementById("otp-form");
+      const correctionForm = document.getElementById("correction-form");
+      const requestEmail = document.getElementById("request-email");
+      const otpCode = document.getElementById("otp-code");
+      const coupleName = document.getElementById("couple-name");
+      const weddingDate = document.getElementById("wedding-date");
+      const photoSlots = [
+        { input: document.getElementById("photo-one"), preview: document.getElementById("photo-one-preview"), previewButton: document.getElementById("photo-one-preview-button"), title: document.getElementById("photo-one-status-title"), copy: document.getElementById("photo-one-status-text"), choose: document.getElementById("choose-photo-one-button"), key: "photo_one" },
+        { input: document.getElementById("photo-two"), preview: document.getElementById("photo-two-preview"), previewButton: document.getElementById("photo-two-preview-button"), title: document.getElementById("photo-two-status-title"), copy: document.getElementById("photo-two-status-text"), choose: document.getElementById("choose-photo-two-button"), key: "photo_two" }
+      ];
+      const lightbox = document.getElementById("photo-lightbox");
+      const lightboxImage = document.getElementById("photo-lightbox-image");
+      let registeredEmail = "";
+      let correctionSessionToken = "";
+      let currentLightboxSlot = null;
+
+      function getSupabaseClient() {
+        if (!window.cacsfSupabaseReady || !window.cacsf || !window.cacsf.supabase) {
+          throw new Error("Connection error. Please refresh the page and try again.");
+        }
+        return window.cacsf.supabase;
+      }
+      function setStatus(id, message, type = "") {
+        const el = document.getElementById(id);
+        el.textContent = message || "";
+        el.className = "correction-status" + (type ? " " + type : "");
+      }
+      function setButtonBusy(button, busy, busyText, normalText) {
+        button.disabled = busy;
+        button.textContent = busy ? busyText : normalText;
+      }
+      function showSection(target) {
+        [requestSection, otpSection, correctionSection].forEach(section => section.classList.toggle("correction-hidden", section !== target));
+      }
+      function getFunctionError(data, error) {
+        if (data && data.error) return data.error;
+        if (data && data.message) return data.message;
+        if (error && error.message) return error.message;
+        return "Something went wrong. Please try again.";
+      }
+      function fillCorrectionForm(registration) {
+        coupleName.value = registration.couple_name || "";
+        weddingDate.value = registration.wedding_date ? String(registration.wedding_date).slice(0, 10) : "";
+        document.getElementById("email").value = registration.email || registeredEmail;
+        const urls = [registration.photo_one_url, registration.photo_two_url];
+        photoSlots.forEach((slot, index) => {
+          if (urls[index]) {
+            slot.preview.src = urls[index];
+            slot.preview.hidden = false;
+            slot.previewButton.classList.remove("correction-hidden");
+            slot.title.textContent = index === 0 ? "Current first photograph" : "Current second photograph";
+            slot.copy.textContent = "Choose another file below if you want to replace this image.";
+          } else {
+            slot.preview.removeAttribute("src");
+            slot.preview.hidden = true;
+            slot.previewButton.classList.add("correction-hidden");
+            slot.title.textContent = index === 0 ? "No first photograph available" : "No second photograph available";
+            slot.copy.textContent = "Choose an image below if you want to add one.";
+          }
+        });
+      }
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result !== "string") return reject(new Error("Unable to read the selected photograph."));
+            const encoded = reader.result.split(",")[1];
+            if (!encoded) return reject(new Error("Unable to process the selected photograph."));
+            resolve(encoded);
+          };
+          reader.onerror = () => reject(new Error("Unable to read the selected photograph."));
+          reader.readAsDataURL(file);
+        });
+      }
+      async function invokeFunction(body) {
+        const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, { body });
+        if (error || !data || !data.success) throw new Error(getFunctionError(data, error));
+        return data;
+      }
+      async function resendOtp() {
+        if (!registeredEmail) return;
+        const button = document.getElementById("resend-otp-button");
+        setButtonBusy(button, true, "Sending...", "Resend verification code");
+        setStatus("otp-status", "Requesting a new verification code...");
+        try {
+          const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, { body: { action: "request", email: registeredEmail } });
+          if (data && data.code === "RECENT_REQUEST") {
+            setStatus("otp-status", data.message || "A code was sent recently. Please wait one minute before requesting another.", "error");
+            return;
+          }
+          if (error || !data || !data.success) throw new Error(getFunctionError(data, error));
+          setStatus("otp-status", data.message || "A new verification code has been sent.", "success");
+        } catch (error) {
+          console.error("Wedding OTP resend error:", error);
+          setStatus("otp-status", error.message || "Unable to resend the code. Please try again.", "error");
+        } finally {
+          setButtonBusy(button, false, "Sending...", "Resend verification code");
+        }
+      }
+
+      requestForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        setStatus("request-status", "");
+        if (!requestForm.reportValidity()) return;
+        registeredEmail = requestEmail.value.trim().toLowerCase();
+        const button = document.getElementById("request-button");
+        setButtonBusy(button, true, "Sending code...", "SEND VERIFICATION CODE ↗");
+        try {
+          const { data, error } = await getSupabaseClient().functions.invoke(FUNCTION_NAME, { body: { action: "request", email: registeredEmail } });
+          if (data && data.code === "RECENT_REQUEST") {
+            document.getElementById("otp-destination").textContent = data.message || "A code was sent recently. Check your inbox or wait one minute.";
+            showSection(otpSection);
+            setStatus("otp-status", data.message || "A code was sent recently. Please check your inbox.", "error");
+            return;
+          }
+          if (error || !data || !data.success) throw new Error(getFunctionError(data, error));
+          document.getElementById("otp-destination").textContent = "Enter the six-digit code sent to " + registeredEmail + ".";
+          otpCode.value = "";
+          showSection(otpSection);
+          setStatus("otp-status", data.message || "Your verification code has been sent. Check your inbox and spam folder.", "success");
+          otpCode.focus();
+        } catch (error) {
+          console.error("Wedding OTP request error:", error);
+          setStatus("request-status", error.message || "Unable to send a verification code. Please try again.", "error");
+        } finally {
+          setButtonBusy(button, false, "Sending code...", "SEND VERIFICATION CODE ↗");
+        }
+      });
+
+      otpForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        setStatus("otp-status", "");
+        if (!otpForm.reportValidity()) return;
+        const code = otpCode.value.trim();
+        if (!/^\d{6}$/.test(code)) {
+          setStatus("otp-status", "Enter the six-digit code from your email.", "error");
+          return;
+        }
+        const button = document.getElementById("verify-otp-button");
+        setButtonBusy(button, true, "Verifying...", "VERIFY CODE ↗");
+        try {
+          const data = await invokeFunction({ action: "verify_otp", email: registeredEmail, otp: code });
+          if (!data.session_token || !data.registration) throw new Error("The verification response was incomplete. Please request a new code.");
+          correctionSessionToken = data.session_token;
+          fillCorrectionForm(data.registration);
+          setStatus("correction-status", "Your email has been verified. You can now correct your wedding details.", "success");
+          showSection(correctionSection);
+        } catch (error) {
+          console.error("Wedding OTP verification error:", error);
+          setStatus("otp-status", error.message || "The code could not be verified. Please try again.", "error");
+          otpCode.select();
+        } finally {
+          setButtonBusy(button, false, "Verifying...", "VERIFY CODE ↗");
+        }
+      });
+
+      document.getElementById("resend-otp-button").addEventListener("click", resendOtp);
+      document.getElementById("change-email-button").addEventListener("click", () => {
+        setStatus("request-status", "");
+        setStatus("otp-status", "");
+        showSection(requestSection);
+        requestEmail.value = registeredEmail;
+        requestEmail.focus();
+      });
+
+      photoSlots.forEach(slot => {
+        slot.choose.addEventListener("click", () => slot.input.click());
+        slot.input.addEventListener("change", () => {
+          setStatus("correction-status", "");
+          const file = slot.input.files && slot.input.files[0];
+          if (!file) return;
+          if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+            setStatus("correction-status", "Please select a JPG, PNG or WebP wedding photograph.", "error");
+            slot.input.value = "";
+            return;
+          }
+          if (file.size > MAX_PHOTO_BYTES) {
+            setStatus("correction-status", "Each wedding photograph must not exceed 20MB.", "error");
+            slot.input.value = "";
+            return;
+          }
+          if (slot.preview.dataset.objectUrl) URL.revokeObjectURL(slot.preview.dataset.objectUrl);
+          const objectUrl = URL.createObjectURL(file);
+          slot.preview.dataset.objectUrl = objectUrl;
+          slot.preview.src = objectUrl;
+          slot.preview.hidden = false;
+          slot.previewButton.classList.remove("correction-hidden");
+          slot.title.textContent = "New photograph selected";
+          slot.copy.textContent = file.name + " — " + (file.size / (1024 * 1024)).toFixed(2) + "MB";
+        });
+        slot.previewButton.addEventListener("click", () => {
+          if (!slot.preview.src || slot.preview.hidden) return;
+          currentLightboxSlot = slot;
+          lightboxImage.src = slot.preview.src;
+          lightbox.hidden = false;
+          document.body.style.overflow = "hidden";
+        });
+      });
+
+      function closeLightbox() {
+        lightbox.hidden = true;
+        lightboxImage.removeAttribute("src");
+        currentLightboxSlot = null;
+        document.body.style.overflow = "";
+      }
+      document.getElementById("close-photo-lightbox").addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", event => { if (event.target === lightbox) closeLightbox(); });
+      document.addEventListener("keydown", event => { if (event.key === "Escape" && !lightbox.hidden) closeLightbox(); });
+
+      correctionForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        setStatus("correction-status", "");
+        if (!correctionSessionToken) {
+          setStatus("correction-status", "Your verified correction session has expired. Please request a new verification code.", "error");
+          return;
+        }
+        if (!correctionForm.reportValidity()) return;
+        const name = coupleName.value.trim();
+        const date = weddingDate.value;
+        if (!name || name.length > 160 || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          setStatus("correction-status", "Please enter a valid couple's name and wedding date.", "error");
+          return;
+        }
+        const button = document.getElementById("update-button");
+        setButtonBusy(button, true, "Saving corrections...", "SAVE CORRECTIONS ↗");
+        try {
+          const payload = { action: "update", token: correctionSessionToken, couple_name: name, wedding_date: date };
+          for (const slot of photoSlots) {
+            const file = slot.input.files && slot.input.files[0];
+            if (!file) continue;
+            if (!ALLOWED_PHOTO_TYPES.includes(file.type) || file.size > MAX_PHOTO_BYTES) {
+              throw new Error("Choose JPG, PNG or WebP photographs up to 20MB each.");
+            }
+            payload[slot.key + "_base64"] = await fileToBase64(file);
+            payload[slot.key + "_content_type"] = file.type;
+          }
+          const data = await invokeFunction(payload);
+          correctionSessionToken = "";
+          setStatus("correction-status", data.message || "Your wedding registration has been corrected successfully.", "success");
+          button.textContent = "CORRECTIONS SAVED";
+          button.disabled = true;
+          photoSlots.forEach(slot => {
+            if (slot.preview.dataset.objectUrl) {
+              URL.revokeObjectURL(slot.preview.dataset.objectUrl);
+              delete slot.preview.dataset.objectUrl;
+            }
+          });
+        } catch (error) {
+          console.error("Wedding correction submission error:", error);
+          setStatus("correction-status", error.message || "Unable to save your corrections. Please try again.", "error");
+        } finally {
+          if (correctionSessionToken) {
+            button.disabled = false;
+            button.textContent = "SAVE CORRECTIONS ↗";
+          }
+        }
+      });
+
+      showSection(requestSection);
+    })();
+  </script>
+</body>
+</html>
