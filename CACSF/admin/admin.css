@@ -93,3 +93,118 @@ body[data-admin-theme=dark]{--bg:#101914;--surface:#19251e;--surface2:#202e25;--
 @media(max-width:1050px){.top-search{display:none}.dashboard-columns{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.sidebar{transform:translateX(-100%);transition:transform .22s ease}.sidebar.open{transform:translateX(0)}.mobile-shade.show{display:block;position:fixed;inset:0;background:#06150d88;z-index:19}.main-area{margin-left:0}.menu-toggle{display:inline-grid;place-items:center}.topbar-tools{gap:6px}.user-pill{display:none}.dashboard-columns{grid-template-columns:1fr}.page#page-wedding-overview .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.topbar{padding:0 12px}.topbar-start h2{font-size:14px}.nav-logout{padding:8px}.page-wrap{padding:18px 12px 40px}.page-heading{align-items:flex-start;flex-direction:column}.page#page-wedding-overview .stat-grid{grid-template-columns:1fr 1fr}}
+
+
+/* =========================================================
+   RECORD VIEW / EDIT DIALOGS — consistent sizing and alignment
+   ========================================================= */
+.modal{
+  width:min(680px,calc(100vw - 28px));
+  max-width:680px;
+  max-height:min(88vh,820px);
+  overflow:auto;
+  padding:20px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:0 24px 70px rgba(0,0,0,.24);
+}
+.modal::backdrop{background:rgba(7,24,17,.62);backdrop-filter:blur(3px)}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.modal-head>div{min-width:0}
+.modal-head h2{margin:4px 0 0}
+.modal form{padding:0;min-width:0}
+.modal .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.modal .form-grid .full{grid-column:1/-1}
+.modal .control-label{min-width:0;gap:7px;line-height:1.4}
+.modal .text-input,.modal .select-input,.modal input[type="date"],.modal input[type="email"],.modal input[type="number"]{
+  width:100%;min-width:0;min-height:42px;box-sizing:border-box;
+}
+.modal .modal-actions{
+  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
+  gap:9px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)
+}
+.modal-actions .button{min-width:100px;min-height:38px;display:inline-flex;align-items:center;justify-content:center}
+.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.detail-cell{min-width:0;overflow-wrap:anywhere}
+.detail-cell b{display:block;overflow-wrap:anywhere;white-space:normal}
+.details-grid .details-photo,
+.details-grid img.details-photo{
+  display:block;grid-column:1/-1;width:auto;max-width:min(100%,320px);
+  max-height:300px;height:auto;object-fit:contain;object-position:center;
+  margin:8px auto 4px;border-radius:12px;background:var(--surface2)
+}
+.wedding-edit-photo-preview{
+  display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;
+  gap:12px;width:100%;min-width:0;min-height:50px;padding:10px;
+  box-sizing:border-box;border:1px dashed var(--line);border-radius:10px;
+  background:var(--surface2)
+}
+.wedding-edit-photo-preview img{
+  display:block;width:112px;height:112px;max-width:100%;flex:0 0 auto;
+  object-fit:contain;object-position:center;border-radius:8px;
+  background:var(--surface);border:1px solid var(--line);cursor:zoom-in
+}
+.wedding-photos-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;align-items:center
+}
+.wedding-photos-grid img{
+  display:block;width:100%;height:230px;max-height:32vh;
+  object-fit:contain;object-position:center;background:var(--surface2);
+  border:1px solid var(--line);border-radius:12px;cursor:zoom-in
+}
+.photo-lightbox{
+  width:min(94vw,1100px);height:min(92vh,900px);max-width:none;max-height:none;
+  padding:54px 18px 18px;border:0;border-radius:14px;
+  background:rgba(5,15,10,.96);color:#fff;overflow:hidden
+}
+.photo-lightbox::backdrop{background:rgba(0,0,0,.82)}
+.photo-lightbox img{
+  display:block;width:100%;height:100%;max-width:100%;max-height:100%;
+  object-fit:contain;margin:auto
+}
+.photo-lightbox .lightbox-close{position:absolute;right:14px;top:10px;z-index:2}
+.action-link{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;min-height:30px;padding:5px 9px;border-radius:6px;white-space:nowrap}
+.action-link.danger,.button-danger,
+button[data-delete-wedding],button[data-delete-alumnus],button[data-delete]{
+  color:#fff!important;background:#dc3545!important;border:1px solid #dc3545!important;
+  text-decoration:none!important
+}
+.action-link.danger:hover,.button-danger:hover,
+button[data-delete-wedding]:hover,button[data-delete-alumnus]:hover,button[data-delete]:hover{
+  background:#bb2d3b!important;border-color:#bb2d3b!important
+}
+td .action-link{margin:2px 3px 2px 0}
+@media(max-width:600px){
+  .modal{width:calc(100vw - 18px);max-height:92vh;padding:15px;border-radius:13px}
+  .modal .form-grid,.details-grid{grid-template-columns:minmax(0,1fr)}
+  .modal .form-grid .full{grid-column:auto}
+  .details-grid .details-photo,.details-grid img.details-photo{grid-column:auto;max-width:100%;max-height:260px}
+  .wedding-photos-grid{grid-template-columns:1fr}
+  .wedding-photos-grid img{height:220px;max-height:34vh}
+  .wedding-edit-photo-preview img{width:96px;height:96px}
+  .modal .modal-actions{justify-content:stretch}
+  .modal-actions .button{flex:1 1 120px}
+}
+
+
+/* Final layout corrections: greeting, menu indicators and contained photo previews */
+.welcome-band{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:12px 0 20px;margin:0 0 20px;background:transparent;border:0;border-radius:0;box-shadow:none;min-width:0}
+.welcome-copy{min-width:0;max-width:100%}
+.welcome-copy .eyebrow{display:block;margin-bottom:8px;font-size:9px;letter-spacing:.19em;font-weight:850;color:var(--green2)}
+.welcome-copy h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(30px,3vw,38px);font-weight:500;letter-spacing:-.035em;line-height:1.12;margin:0;color:var(--text);overflow-wrap:anywhere}
+.welcome-copy p{margin:8px 0 0;color:var(--muted);font:400 11px/1.6 Inter,ui-sans-serif,system-ui,sans-serif}
+.welcome-actions{display:flex;align-items:center;justify-content:flex-end;flex:0 0 auto;padding-bottom:2px}
+.nav-group-toggle .chevron{width:9px;height:9px;flex:0 0 9px;margin-left:auto;border:0;border-right:2px solid #d5e3da;border-bottom:2px solid #d5e3da;border-radius:1px;background:transparent;font-size:0;line-height:0;transform:rotate(45deg);transition:transform .18s ease,opacity .18s ease;opacity:.9}
+.nav-group-toggle[aria-expanded="true"] .chevron{transform:rotate(225deg)}
+.details-grid .details-photo,.details-grid img.details-photo{grid-column:auto;width:118px;height:118px;max-width:118px;max-height:118px;object-fit:cover;border-radius:10px;cursor:zoom-in}
+.wedding-detail-photos{display:flex;align-items:flex-start;justify-content:flex-start;flex-wrap:wrap;gap:10px;min-width:0;max-width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
+.wedding-detail-photos img{display:block;width:118px;height:118px;max-width:100%;object-fit:cover;object-position:center;border-radius:9px;border:1px solid var(--line);cursor:zoom-in}
+.wedding-edit-photo-preview img{width:92px;height:92px;max-width:92px;max-height:92px;object-fit:cover}
+.photo-lightbox{display:none;position:fixed;inset:0;margin:auto;width:min(92vw,1000px);height:min(88vh,760px);max-width:92vw;max-height:88vh;padding:48px 16px 16px;overflow:hidden;box-sizing:border-box}
+.photo-lightbox[open]{display:block}
+.photo-lightbox img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;margin:0 auto}
+@media(max-width:760px){.welcome-band{padding:8px 0 17px;align-items:flex-start;flex-direction:column;gap:12px}.welcome-copy h1{font-size:29px}.welcome-actions{justify-content:flex-start}}
+@media(max-width:520px){.welcome-band{padding:7px 0 15px}.welcome-copy h1{font-size:26px}.details-grid .details-photo,.details-grid img.details-photo{width:104px;height:104px;max-width:104px;max-height:104px}.wedding-detail-photos img{width:104px;height:104px}}
