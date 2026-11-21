@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,6 +109,107 @@
   background: rgba(255,255,255,.3);
 }
 
+/* =========================================
+   BOTTOM NAVIGATION BOXES
+========================================= */
+
+.birthday-bottom-navigation {
+  width: min(100% - 40px, 950px);
+  margin: 42px auto 35px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.birthday-navigation-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 125px;
+  padding: 22px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  transition: transform .25s ease, border-color .25s ease,
+              box-shadow .25s ease;
+}
+
+.birthday-navigation-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--green);
+  box-shadow: 0 18px 40px rgba(22,54,39,.13);
+}
+
+.birthday-navigation-icon {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: var(--deep);
+  background: var(--green);
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.birthday-navigation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.birthday-navigation-content small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.birthday-navigation-content strong {
+  display: block;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.birthday-navigation-content p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.birthday-navigation-arrow {
+  flex: 0 0 auto;
+  color: var(--deep);
+  font-size: 23px;
+  font-weight: 800;
+  transition: transform .25s ease;
+}
+
+.birthday-navigation-card:hover .birthday-navigation-arrow {
+  transform: translateX(5px);
+}
+
+/* Wedding card accent */
+.birthday-navigation-card.wedding-card .birthday-navigation-icon {
+  color: #fff;
+  background: var(--deep);
+}
+
+.birthday-navigation-card.wedding-card .birthday-navigation-arrow {
+  color: var(--green);
+}
+
 @media(max-width: 600px) {
   .birthday-photo-preview-button {
     width: 115px;
@@ -122,6 +224,34 @@
     max-width: 100%;
     max-height: 84vh;
     max-height: 84dvh;
+  }
+
+  .birthday-bottom-navigation {
+    width: calc(100% - 30px);
+    grid-template-columns: 1fr;
+    gap: 13px;
+    margin: 32px auto 28px;
+  }
+
+  .birthday-navigation-card {
+    min-height: 108px;
+    padding: 18px;
+    border-radius: 17px;
+  }
+
+  .birthday-navigation-icon {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .birthday-navigation-content strong {
+    font-size: 15px;
+  }
+
+  .birthday-navigation-content p {
+    font-size: 11px;
   }
 }
 </style>
@@ -346,6 +476,35 @@
     Already registered but made a mistake?
     <a href="correction.html">Correct My Registration</a>
   </p>
+
+  <!-- BOTTOM NAVIGATION BOXES -->
+  <section class="birthday-bottom-navigation" aria-label="Explore other CACSF registration pages">
+
+    <a href="index.html" class="birthday-navigation-card home-card">
+      <span class="birthday-navigation-icon" aria-hidden="true">⌂</span>
+
+      <span class="birthday-navigation-content">
+        <small>RETURN TO MAIN PAGE</small>
+        <strong>Back to Home</strong>
+        <p>Return to the CACSF Alumni welcome page.</p>
+      </span>
+
+      <span class="birthday-navigation-arrow" aria-hidden="true">→</span>
+    </a>
+
+    <a href="wedding.html" class="birthday-navigation-card wedding-card">
+      <span class="birthday-navigation-icon" aria-hidden="true">♡</span>
+
+      <span class="birthday-navigation-content">
+        <small>CELEBRATE YOUR UNION</small>
+        <strong>Register Your Wedding Anniversary</strong>
+        <p>Share your love story with the CACSF family.</p>
+      </span>
+
+      <span class="birthday-navigation-arrow" aria-hidden="true">→</span>
+    </a>
+
+  </section>
 
   <div class="registration-footnote">
     <img src="assets/cacsf-logo.png" alt="CACSF logo">
