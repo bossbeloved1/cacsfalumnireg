@@ -14,18 +14,13 @@
 <link rel="stylesheet" href="assets/css/style.css">
 
 <style>
-/* =========================================
-   WEDDING DATE CALENDAR ICON
-========================================= */
-
-/* Light mode: dark calendar icon */
+/* WEDDING DATE CALENDAR ICON */
 #wedding-date::-webkit-calendar-picker-indicator {
   filter: brightness(0);
   opacity: 1;
   cursor: pointer;
 }
 
-/* Dark mode: force calendar icon to pure white */
 :root[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator,
 body[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator,
 html.dark #wedding-date::-webkit-calendar-picker-indicator,
@@ -38,7 +33,6 @@ html[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-/* Native date control colour scheme */
 #wedding-date {
   color-scheme: light;
 }
@@ -53,10 +47,7 @@ html[data-theme="dark"] #wedding-date {
   color-scheme: dark;
 }
 
-/* =========================================
-   WEDDING PHOTO PREVIEWS
-========================================= */
-
+/* WEDDING PHOTO PREVIEWS */
 .wedding-photo-previews {
   display: flex;
   flex-wrap: wrap;
@@ -102,10 +93,7 @@ html[data-theme="dark"] #wedding-date {
   color: var(--reg-muted);
 }
 
-/* =========================================
-   PHOTO LIGHTBOX
-========================================= */
-
+/* PHOTO LIGHTBOX */
 #wedding-photo-lightbox {
   position: fixed;
   inset: 0;
@@ -162,10 +150,7 @@ html[data-theme="dark"] #wedding-date {
   background: rgba(255,255,255,.3);
 }
 
-/* =========================================
-   CORRECTION LINK
-========================================= */
-
+/* CORRECTION LINK */
 .wedding-correction-link {
   margin: 22px auto 0;
   padding: 0 15px;
@@ -186,10 +171,7 @@ html[data-theme="dark"] #wedding-date {
   text-decoration: underline;
 }
 
-/* =========================================
-   BOTTOM NAVIGATION
-========================================= */
-
+/* BOTTOM NAVIGATION */
 .wedding-bottom-navigation {
   width: min(100% - 40px, 720px);
   margin: 28px auto 25px;
@@ -276,10 +258,7 @@ html[data-theme="dark"] #wedding-date {
   color: var(--reg-green-dark);
 }
 
-/* =========================================
-   MOBILE
-========================================= */
-
+/* MOBILE */
 @media(max-width: 600px) {
   .wedding-photo-preview-button {
     width: 115px;
@@ -337,7 +316,6 @@ html[data-theme="dark"] #wedding-date {
 
 <body>
 
-<!-- HEADER -->
 <header class="register-header">
   <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship home">
     <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
@@ -347,7 +325,6 @@ html[data-theme="dark"] #wedding-date {
   <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
 </header>
 
-<!-- WEDDING ANNIVERSARY REGISTRATION -->
 <main class="registration-main">
 
   <section class="registration-intro" aria-labelledby="registration-title">
@@ -387,7 +364,6 @@ html[data-theme="dark"] #wedding-date {
 
       <div class="form-grid">
 
-        <!-- COUPLE NAME -->
         <label class="full">
           <span class="field-label">
             Couple's name <span class="required-mark">*</span>
@@ -404,7 +380,6 @@ html[data-theme="dark"] #wedding-date {
           >
         </label>
 
-        <!-- WEDDING DATE -->
         <label>
           <span class="field-label">
             Wedding date <span class="required-mark">*</span>
@@ -420,7 +395,6 @@ html[data-theme="dark"] #wedding-date {
           <small>Select the actual date of your wedding.</small>
         </label>
 
-        <!-- YEARS OF MARRIAGE -->
         <label>
           <span class="field-label">Years of marriage</span>
 
@@ -433,7 +407,6 @@ html[data-theme="dark"] #wedding-date {
           >
         </label>
 
-        <!-- EMAIL -->
         <label class="full">
           <span class="field-label">
             Email address <span class="required-mark">*</span>
@@ -449,7 +422,6 @@ html[data-theme="dark"] #wedding-date {
           >
         </label>
 
-        <!-- PHOTO TYPE -->
         <div class="full">
           <span class="field-label">
             Wedding photographs <span class="required-mark">*</span>
@@ -485,7 +457,6 @@ html[data-theme="dark"] #wedding-date {
           </div>
         </div>
 
-        <!-- ONE COUPLE PHOTO -->
         <label class="full upload-field" id="couple-photo-field">
 
           <span class="field-label">
@@ -518,7 +489,6 @@ html[data-theme="dark"] #wedding-date {
 
         </label>
 
-        <!-- TWO SEPARATE PHOTOS -->
         <div class="full" id="separate-photo-fields" hidden>
 
           <label class="upload-field">
@@ -583,7 +553,6 @@ html[data-theme="dark"] #wedding-date {
 
         </div>
 
-        <!-- CONSENT -->
         <label class="full check-label">
           <input type="checkbox" name="consent" required>
           I agree that CACSF Alumni Fellowship may use these details and photographs to celebrate our wedding anniversary and communicate alumni updates.
@@ -601,13 +570,11 @@ html[data-theme="dark"] #wedding-date {
 
   </section>
 
-  <!-- CORRECTION LINK -->
   <p class="wedding-correction-link">
     Already registered but made a mistake?
     <a href="wedding-correction.html">Correct My Wedding Registration</a>
   </p>
 
-  <!-- BOTTOM NAVIGATION -->
   <section class="wedding-bottom-navigation" aria-label="Other CACSF pages">
 
     <a href="index.html" class="wedding-navigation-card home-card">
@@ -636,7 +603,6 @@ html[data-theme="dark"] #wedding-date {
 
   </section>
 
-  <!-- FOOTNOTE -->
   <div class="registration-footnote">
     <img src="assets/cacsf-logo.png" alt="CACSF logo">
     <span>CACSF..... LIBERATION FAMILY</span>
@@ -644,7 +610,6 @@ html[data-theme="dark"] #wedding-date {
 
 </main>
 
-<!-- FULL-SIZE PHOTO PREVIEW -->
 <div
   id="wedding-photo-lightbox"
   role="dialog"
@@ -701,6 +666,7 @@ html[data-theme="dark"] #wedding-date {
   const closeButton = document.getElementById("wedding-photo-lightbox-close");
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
   const ALLOWED_TYPES = [
     "image/jpeg",
     "image/png",
@@ -734,6 +700,360 @@ html[data-theme="dark"] #wedding-date {
     if (type) {
       status.classList.add(type);
     }
+  }
+
+  /* =========================================
+     CACSF WEDDING SUCCESS CELEBRATION
+     Same design and animation as birthday page
+  ========================================= */
+
+  function showWeddingCelebration() {
+    if (document.getElementById("cacsf-celebration")) return;
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "cacsf-celebration";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "cacsf-celebration-title");
+
+    overlay.innerHTML = `
+      <style>
+        #cacsf-celebration {
+          position: fixed;
+          inset: 0;
+          z-index: 100000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(2, 15, 8, .86);
+          backdrop-filter: blur(12px);
+          animation: cacsfFadeIn .45s ease both;
+          overflow: hidden;
+        }
+
+        #cacsf-celebration .celebration-card {
+          position: relative;
+          z-index: 2;
+          width: min(100%, 490px);
+          padding: 42px 30px;
+          text-align: center;
+          color: #143622;
+          background: linear-gradient(145deg, #ffffff, #eaffed);
+          border: 2px solid rgba(255,255,255,.8);
+          border-radius: 28px;
+          box-shadow:
+            0 0 35px rgba(67,255,117,.25),
+            0 0 100px rgba(67,255,117,.16),
+            0 25px 80px rgba(0,0,0,.35);
+          animation: cacsfPop .65s cubic-bezier(.2,.8,.3,1.3) both;
+        }
+
+        #cacsf-celebration .success-glow {
+          width: 105px;
+          height: 105px;
+          margin: 0 auto 22px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          color: white;
+          font-size: 49px;
+          font-weight: 800;
+          background: radial-gradient(circle at 35% 30%, #a7ffb5, #24c653 60%, #08752e);
+          box-shadow:
+            0 0 0 10px rgba(53,228,92,.12),
+            0 0 35px rgba(35,220,85,.75);
+          animation: cacsfPulse 1.8s ease-in-out infinite;
+        }
+
+        #cacsf-celebration .celebration-label {
+          display: block;
+          margin-bottom: 12px;
+          color: #21813e;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 3px;
+        }
+
+        #cacsf-celebration h2 {
+          margin: 0 auto 17px;
+          color: #123c24;
+          font: 800 clamp(23px, 5vw, 34px)/1.15 Manrope, sans-serif;
+          letter-spacing: -1px;
+        }
+
+        #cacsf-celebration .celebration-message {
+          margin: 0 auto 25px;
+          max-width: 380px;
+          color: #245438;
+          font: 800 clamp(15px, 3.5vw, 19px)/1.55 Manrope, sans-serif;
+          letter-spacing: .3px;
+        }
+
+        #cacsf-celebration .celebration-close {
+          border: 0;
+          border-radius: 30px;
+          padding: 14px 28px;
+          color: white;
+          background: linear-gradient(110deg, #159c43, #38d85d);
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 8px 22px rgba(26,170,68,.25);
+          transition: transform .2s, filter .2s;
+        }
+
+        #cacsf-celebration .celebration-close:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.08);
+        }
+
+        #cacsf-celebration .confetti-piece {
+          position: absolute;
+          top: -25px;
+          width: 9px;
+          height: 15px;
+          border-radius: 2px;
+          pointer-events: none;
+          animation: cacsfConfetti linear forwards;
+        }
+
+        #cacsf-celebration .sparkle {
+          position: absolute;
+          color: #c5ffcf;
+          font-size: 19px;
+          pointer-events: none;
+          animation: cacsfSparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes cacsfFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes cacsfPop {
+          from {
+            opacity: 0;
+            transform: scale(.65) translateY(25px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes cacsfPulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow:
+              0 0 0 10px rgba(53,228,92,.12),
+              0 0 35px rgba(35,220,85,.75);
+          }
+
+          50% {
+            transform: scale(1.09);
+            box-shadow:
+              0 0 0 17px rgba(53,228,92,.07),
+              0 0 55px rgba(35,220,85,.9);
+          }
+        }
+
+        @keyframes cacsfConfetti {
+          0% {
+            transform: translate3d(0,-10px,0) rotate(0deg);
+            opacity: 1;
+          }
+
+          100% {
+            transform: translate3d(var(--drift),110vh,0) rotate(900deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes cacsfSparkle {
+          0%,100% {
+            opacity: .25;
+            transform: scale(.7) rotate(0deg);
+          }
+
+          50% {
+            opacity: 1;
+            transform: scale(1.3) rotate(45deg);
+          }
+        }
+
+        @media(max-width:480px) {
+          #cacsf-celebration .celebration-card {
+            padding: 35px 21px;
+            border-radius: 22px;
+          }
+
+          #cacsf-celebration .success-glow {
+            width: 85px;
+            height: 85px;
+            font-size: 40px;
+          }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+          #cacsf-celebration *,
+          #cacsf-celebration *::before {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+          }
+        }
+
+        /* Improved mobile success celebration */
+        @media(max-width:560px) {
+          #cacsf-celebration {
+            padding: 12px;
+            overflow-y: auto;
+          }
+
+          #cacsf-celebration .celebration-card {
+            width: 100%;
+            max-height: calc(100vh - 24px);
+            max-height: calc(100dvh - 24px);
+            overflow-y: auto;
+            padding: 28px 18px;
+          }
+
+          #cacsf-celebration .success-glow {
+            width: 85px;
+            height: 85px;
+            font-size: 40px;
+          }
+
+          #cacsf-celebration h2 {
+            font-size: clamp(22px, 6vw, 30px);
+          }
+
+          #cacsf-celebration .celebration-message {
+            font-size: clamp(14px, 4vw, 17px);
+          }
+        }
+
+        /* Keep the requested mobile animations visible */
+        @media(max-width:560px) and (prefers-reduced-motion:reduce) {
+          #cacsf-celebration .celebration-card {
+            animation-duration: .65s !important;
+          }
+
+          #cacsf-celebration .success-glow {
+            animation-duration: 1.8s !important;
+            animation-iteration-count: infinite !important;
+          }
+
+          #cacsf-celebration .confetti-piece {
+            animation-duration: 9.6s !important;
+            animation-iteration-count: 1 !important;
+          }
+
+          #cacsf-celebration .sparkle {
+            animation-duration: 2s !important;
+            animation-iteration-count: infinite !important;
+          }
+        }
+      </style>
+
+      <div class="celebration-card">
+        <div class="success-glow" aria-hidden="true">✓</div>
+
+        <span class="celebration-label">
+          CACSF ALUMNI FELLOWSHIP
+        </span>
+
+        <h2 id="cacsf-celebration-title">
+          REGISTRATION SUCCESSFUL!
+        </h2>
+
+        <p class="celebration-message">
+          YOUR WEDDING ANNIVERSARY DETAILS HAVE BEEN RECEIVED.
+          THANK YOU FOR SHARING YOUR SPECIAL MOMENT WITH THE CACSF
+          FAMILY. WE CELEBRATE YOUR UNION!
+        </p>
+
+        <button type="button" class="celebration-close">
+          Thank you! Close
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const isSmallScreen = window.matchMedia("(max-width: 560px)").matches;
+
+    const confettiColors = [
+      "#35e45c",
+      "#b6ed43",
+      "#ffffff",
+      "#ffd166",
+      "#69d9ff",
+      "#ff8bc2"
+    ];
+
+    for (let i = 0; i < 100; i++) {
+      const piece = document.createElement("span");
+
+      piece.className = "confetti-piece";
+      piece.style.left = Math.random() * 100 + "%";
+
+      piece.style.background =
+        confettiColors[
+          Math.floor(Math.random() * confettiColors.length)
+        ];
+
+      piece.style.animationDuration = isSmallScreen
+        ? "9.6s"
+        : (3 + Math.random() * 4) + "s";
+
+      piece.style.animationDelay = isSmallScreen
+        ? (Math.random() * 0.4) + "s"
+        : (Math.random() * 2) + "s";
+
+      piece.style.setProperty(
+        "--drift",
+        (Math.random() * 240 - 120) + "px"
+      );
+
+      overlay.appendChild(piece);
+    }
+
+    for (let i = 0; i < 18; i++) {
+      const sparkle = document.createElement("span");
+
+      sparkle.className = "sparkle";
+      sparkle.textContent = "✦";
+      sparkle.style.left = Math.random() * 100 + "%";
+      sparkle.style.top = Math.random() * 100 + "%";
+      sparkle.style.animationDelay = Math.random() * 2 + "s";
+
+      overlay.appendChild(sparkle);
+    }
+
+    const celebrationCloseButton =
+      overlay.querySelector(".celebration-close");
+
+    function closeCelebration() {
+      overlay.remove();
+      document.removeEventListener("keydown", handleEscape);
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        closeCelebration();
+      }
+    }
+
+    celebrationCloseButton.addEventListener(
+      "click",
+      closeCelebration
+    );
+
+    document.addEventListener("keydown", handleEscape);
+
+    celebrationCloseButton.focus();
   }
 
   /* YEARS OF MARRIAGE */
@@ -781,7 +1101,10 @@ html[data-theme="dark"] #wedding-date {
       years === 1 ? "1 year together" : years + " years together";
   }
 
-  weddingDateInput.addEventListener("change", calculateMarriageDuration);
+  weddingDateInput.addEventListener(
+    "change",
+    calculateMarriageDuration
+  );
 
   /* PHOTO MODE SWITCHING */
 
@@ -802,8 +1125,10 @@ html[data-theme="dark"] #wedding-date {
     if (isCoupleMode) {
       clearPreview("partner-one");
       clearPreview("partner-two");
+
       partnerOneInput.value = "";
       partnerTwoInput.value = "";
+
     } else {
       clearPreview("couple");
       coupleInput.value = "";
@@ -852,7 +1177,8 @@ html[data-theme="dark"] #wedding-date {
     preview.input.addEventListener("change", () => {
       clearPreview(key);
 
-      const file = preview.input.files && preview.input.files[0];
+      const file =
+        preview.input.files && preview.input.files[0];
 
       if (!file) return;
 
@@ -875,7 +1201,9 @@ html[data-theme="dark"] #wedding-date {
 
       lightboxImage.src = photoUrls[key];
       lightbox.classList.add("open");
+
       document.body.style.overflow = "hidden";
+
       closeButton.focus();
     });
 
@@ -898,7 +1226,10 @@ html[data-theme="dark"] #wedding-date {
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && lightbox.classList.contains("open")) {
+    if (
+      event.key === "Escape" &&
+      lightbox.classList.contains("open")
+    ) {
       closeLightbox();
     }
   });
@@ -935,7 +1266,12 @@ html[data-theme="dark"] #wedding-date {
   async function uploadWeddingPhoto(client, file, label) {
     const extension = file.name.split(".").pop().toLowerCase();
 
-    const safeExtension = ["jpg", "jpeg", "png", "webp"].includes(extension)
+    const safeExtension = [
+      "jpg",
+      "jpeg",
+      "png",
+      "webp"
+    ].includes(extension)
       ? extension
       : "jpg";
 
@@ -973,8 +1309,12 @@ html[data-theme="dark"] #wedding-date {
 
     setStatus("");
 
-    const coupleName = document.getElementById("couple-name").value.trim();
-    const email = document.getElementById("wedding-email").value.trim();
+    const coupleName =
+      document.getElementById("couple-name").value.trim();
+
+    const email =
+      document.getElementById("wedding-email").value.trim();
+
     const weddingDate = weddingDateInput.value;
 
     if (!coupleName || !email || !weddingDate) {
@@ -992,7 +1332,24 @@ html[data-theme="dark"] #wedding-date {
     );
 
     if (selectedDate > todayOnly) {
-      setStatus("Please select a wedding date that is not in the future.", "error");
+      setStatus(
+        "Please select a wedding date that is not in the future.",
+        "error"
+      );
+      return;
+    }
+
+    /* CONSENT VALIDATION */
+
+    const consentCheckbox = form.querySelector(
+      'input[name="consent"]'
+    );
+
+    if (!consentCheckbox || !consentCheckbox.checked) {
+      setStatus(
+        "Please tick the consent checkbox before submitting.",
+        "error"
+      );
       return;
     }
 
@@ -1000,7 +1357,10 @@ html[data-theme="dark"] #wedding-date {
 
     const selectedFiles = isCoupleMode
       ? [coupleInput.files[0]]
-      : [partnerOneInput.files[0], partnerTwoInput.files[0]];
+      : [
+          partnerOneInput.files[0],
+          partnerTwoInput.files[0]
+        ];
 
     for (const file of selectedFiles) {
       const error = validatePhoto(file);
@@ -1073,6 +1433,8 @@ html[data-theme="dark"] #wedding-date {
         throw error;
       }
 
+      /* SUCCESS: DATABASE INSERT COMPLETED */
+
       setStatus(
         "Your wedding anniversary details have been submitted successfully. Thank you!",
         "success"
@@ -1086,6 +1448,9 @@ html[data-theme="dark"] #wedding-date {
       Object.keys(previews).forEach(clearPreview);
 
       uploadedPaths = [];
+
+      /* SHOW THE SAME CACSF SUCCESS CELEBRATION */
+      showWeddingCelebration();
 
     } catch (error) {
       console.error("Wedding registration error:", error);
@@ -1107,6 +1472,7 @@ html[data-theme="dark"] #wedding-date {
 
     } finally {
       submitButton.disabled = false;
+
       submitButton.innerHTML =
         'SUBMIT WEDDING DETAILS <span aria-hidden="true">↗</span>';
     }
