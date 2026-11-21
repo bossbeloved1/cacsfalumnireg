@@ -15,24 +15,42 @@
 
 <style>
 /* =========================================
-   WEDDING DATE CALENDAR VISIBILITY
+   WEDDING DATE CALENDAR ICON
 ========================================= */
 
-/* Light mode */
-:root:not([data-theme="dark"]) #wedding-date {
+/* Light mode: dark calendar icon */
+#wedding-date::-webkit-calendar-picker-indicator {
+  filter: brightness(0);
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* Dark mode: force calendar icon to pure white */
+:root[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator,
+body[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator,
+html.dark #wedding-date::-webkit-calendar-picker-indicator,
+body.dark #wedding-date::-webkit-calendar-picker-indicator,
+html.dark-mode #wedding-date::-webkit-calendar-picker-indicator,
+body.dark-mode #wedding-date::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+  cursor: pointer;
+}
+
+/* Native date control colour scheme */
+#wedding-date {
   color-scheme: light;
 }
 
-/* Dark mode */
-:root[data-theme="dark"] #wedding-date {
+:root[data-theme="dark"] #wedding-date,
+body[data-theme="dark"] #wedding-date,
+html.dark #wedding-date,
+body.dark #wedding-date,
+html.dark-mode #wedding-date,
+body.dark-mode #wedding-date,
+html[data-theme="dark"] #wedding-date {
   color-scheme: dark;
-}
-
-/* Ensure the calendar icon is visible in dark mode */
-:root[data-theme="dark"] #wedding-date::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 1;
-  cursor: pointer;
 }
 
 /* =========================================
