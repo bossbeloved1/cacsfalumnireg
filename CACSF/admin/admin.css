@@ -241,3 +241,22 @@ td .action-link{margin:2px 3px 2px 0}
 #photo-lightbox{max-width:min(94vw,1100px);max-height:92vh;padding:42px 14px 14px;overflow:hidden}
 #photo-lightbox img{display:block;max-width:100%;max-height:calc(92vh - 70px);width:auto;height:auto;object-fit:contain;margin:auto}
 @media(max-width:700px){.snapshot-month{grid-template-columns:minmax(70px,.8fr) minmax(45px,1fr) 18px minmax(45px,1fr) 18px;gap:5px}.wedding-detail-photo-section{grid-column:1/-1}#wedding-details-dialog,#wedding-edit-dialog{width:calc(100vw - 18px);max-height:92vh;padding:15px}.wedding-detail-photos img,.wedding-edit-photo-preview img{width:88px;height:88px;max-width:88px;max-height:88px}}
+
+
+/* Dashboard workspace: compact, category-driven latest-records panel */
+#page-overview .stat-card[data-dashboard-type]{cursor:pointer;}
+#page-overview .recent-panel .panel-heading{align-items:center;}
+#page-overview .recent-panel .text-link[hidden]{display:none!important;}
+#page-overview .recent-panel .empty-cell{white-space:normal;line-height:1.6;}
+
+/* Wedding view/edit dialogs: keep information readable and photo areas compact */
+#wedding-details-content .detail-cell{display:block;padding:13px 14px;}
+#wedding-details-content .detail-cell small{display:block;margin:0 0 7px;line-height:1.35;}
+#wedding-details-content .detail-cell b{display:block;line-height:1.5;}
+#wedding-details-content .wedding-detail-photo-section{width:fit-content;max-width:100%;min-width:0;}
+#wedding-details-content .wedding-detail-photos{width:fit-content;max-width:100%;min-height:0;padding:0;border:0;background:transparent;}
+#wedding-edit-photo-preview{display:inline-flex;width:fit-content;max-width:100%;min-width:0;min-height:0;align-items:flex-start;padding:8px;gap:8px;}
+#wedding-edit-photo-preview img{width:104px;height:104px;max-width:104px;max-height:104px;}
+#wedding-edit-dialog .form-grid{row-gap:12px;}
+#wedding-edit-dialog .control-label{min-width:0;}
+#wedding-edit-dialog .file-input{width:100%;max-width:100%;}
