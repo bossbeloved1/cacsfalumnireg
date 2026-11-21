@@ -19,14 +19,14 @@
 <div class="sidebar-label">WORKSPACE</div>
 <nav class="side-nav">
 <a class="side-link" data-route="overview" href="#overview"><span class="side-icon">⌂</span><span>Dashboard</span></a>
-<button aria-expanded="true" class="nav-group-toggle" data-group-target="birthday-subnav" type="button"><span class="side-icon">♧</span><span>Birthday</span><span class="chevron">⌄</span></button>
+<button aria-expanded="true" class="nav-group-toggle" data-group-target="birthday-subnav" type="button"><span class="side-icon">♧</span><span>Birthday</span><span class="chevron" aria-hidden="true"></span></button>
 <div class="nav-submenu open" id="birthday-subnav">
 <a data-route="birthday-overview" href="#birthday-overview">Overview</a>
 <a data-route="directory" href="#directory">Alumni Directory</a>
 <a data-route="monthly" href="#monthly">Monthly Registrations</a>
 <a data-route="birthdays" href="#birthdays">Birthday Directory</a>
 </div>
-<button aria-expanded="false" class="nav-group-toggle" data-group-target="wedding-subnav" type="button"><span class="side-icon">♡</span><span>Wedding Anniversary</span><span class="chevron">⌄</span></button>
+<button aria-expanded="false" class="nav-group-toggle" data-group-target="wedding-subnav" type="button"><span class="side-icon">♡</span><span>Wedding Anniversary</span><span class="chevron" aria-hidden="true"></span></button>
 <div class="nav-submenu" id="wedding-subnav">
 <a data-route="wedding-overview" href="#wedding-overview">Overview</a>
 <a data-route="wedding-directory" href="#wedding-directory">Wedding Directory</a>
@@ -48,11 +48,10 @@
 <div class="topbar-start"><button aria-expanded="false" aria-label="Open navigation" class="icon-button menu-toggle" id="menu-toggle">☰</button><div><div class="breadcrumb">CACSF <span>/</span> <b id="crumb-label">Dashboard</b></div><h2 id="topbar-title">Dashboard</h2></div></div>
 <div class="topbar-tools"><label class="top-search"><span>⌕</span><input id="workspace-search" placeholder="Search this workspace…" type="search"/></label><span class="connection" hidden><i></i><span id="connection-short">Checking connection</span></span><button aria-label="Switch theme" class="icon-button theme-control" id="theme-toggle" title="Toggle light/dark mode">☾</button><div class="user-pill"><span class="user-avatar">A</span><span id="admin-user">Administrator</span></div><button class="button button-outline nav-logout" id="logout" type="button">Log out</button></div>
 </header>
-<section class="welcome-band"><div class="welcome-copy"><span class="eyebrow">CACSF ALUMNI FELLOWSHIP</span><h1>Good day, <span id="welcome-admin">Administrator</span></h1><p>Your fellowship records, celebrations and activities in one place.</p></div><div class="welcome-actions"><span class="date-chip" id="today-label"></span></div></section>
 <div class="page-wrap">
 <div class="status-line" id="connection-status" role="status" hidden></div>
+<section class="welcome-band"><div class="welcome-copy"><span class="eyebrow">CONTROL CENTRE</span><h1>Good day, <span id="welcome-admin">Administrator</span>.</h1><p>Live records and activity from your CACSF alumni database.</p></div><div class="welcome-actions"><span class="date-chip" id="today-label"></span></div></section>
 <section class="page" id="page-overview">
-<div class="overview-intro"><div><span class="panel-kicker">AT A GLANCE</span><h2>Your fellowship at a glance</h2><p>Live records and activity from your CACSF alumni database.</p></div></div>
 <div class="stat-grid">
 <article class="stat-card"><span>Registered alumni (Birthday)</span><b id="alumni-count">—</b><small>Alumni registered for birthdays</small></article><article class="stat-card"><span>Wedding registrations</span><b id="main-wedding-count">—</b><small>Couples registered for anniversaries</small></article>
 <article class="stat-card"><span>Reunion media</span><b id="media-count">—</b><small>Published media items</small></article>
