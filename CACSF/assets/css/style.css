@@ -1,3822 +1,935 @@
-/* ==========================================================
-   CACSF ALUMNI FELLOWSHIP — ADMIN DASHBOARD
-   Existing dashboard + Super Admin Management + Monitoring
-   Requires Supabase JS v2, SheetJS (XLSX) and JSZip.
-   ========================================================== */
-
-(() => {
-  'use strict';
-
-  const $ = id => document.getElementById(id);
-  const has = id => Boolean($(id));
-
-  const cfg =
-    window.CACSF_SUPABASE_URL &&
-    window.CACSF_SUPABASE_ANON_KEY &&
-    window.supabase;
-
-  const client = cfg
-    ? window.supabase.createClient(
-        window.CACSF_SUPABASE_URL,
-        window.CACSF_SUPABASE_ANON_KEY,
-        {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-          }
-        }
-      )
-    : null;
-
-  const BUCKET = window.CACSF_STORAGE_BUCKET || 'cacsf-media';
-
-  let alumni = [];
-  // IDs selected for optional bulk deletion in the Alumni Directorate.
-  const selectedAlumniIds = new Set();
-  let media = [];
-  let projects = [];
-  let messages = [];
-  let weddings = [];
-
-  let selectedMonth = null;
-  let mediaFilter = 'all';
-  let currentUser = null;
-  let monitoringActivity = [];
-  let monitoringAdmins = [];
-  let monitoringLoginHistory = [];
-  const selectedLoginIds = new Set();
-
-  let isAdmin = false;
-  let isSuperAdmin = false;
-  let heartbeatTimer = null;
-
-  /* ==========================================================
-     GENERAL HELPERS
-     ========================================================== */
-
-  const esc = value =>
-    String(value ?? '').replace(/[&<>"']/g, c => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[c]));
-
-  const say = (id, msg, kind = '') => {
-    const el = $(id);
-    if (!el) return;
-
-    el.textContent = msg;
-    el.className = el.className
-      .replace(/\b(error|success)\b/g, '')
-      .trim();
-
-    if (kind) el.classList.add(kind);
-  };
-
-  const fmtDate = value =>
-    value
-      ? new Date(value).toLocaleDateString(undefined, {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        })
-      : '—';
-
-  const fmtDateTime = value =>
-    value ? new Date(value).toLocaleString() : '—';
-
-  const fullName = r =>
-    [r.alias, r.first_name, r.surname]
-      .filter(Boolean)
-      .join(' ')
-      .trim() || 'Unnamed alumnus';
-
-  const monthKey = value => {
-    const d = value ? new Date(value) : null;
-
-    return d && !Number.isNaN(d.getTime())
-      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      : 'Unknown';
-  };
-
-  const monthName = key => {
-    const [y, m] = key.split('-').map(Number);
-
-    return new Date(y, m - 1, 1).toLocaleDateString(
-      undefined,
-      { month: 'long', year: 'numeric' }
-    );
-  };
-
-  const dateSort = (a, b) =>
-    new Date(b.created_at || 0) -
-    new Date(a.created_at || 0);
-
-  const publicUrl = path => {
-    if (!path || !client) return '';
-
-    return client.storage
-      .from(BUCKET)
-      .getPublicUrl(path).data.publicUrl;
-  };
-
-  const storageRemove = async path => {
-    if (!path || !client) return;
-
-    const { error } = await client.storage
-      .from(BUCKET)
-      .remove([path]);
-
-    if (error) {
-      console.warn('Storage cleanup failed:', error.message);
-    }
-  };
-
-  const setBusy = (button, busy, label) => {
-    if (!button) return;
-
-    if (busy) {
-      button.dataset.originalText = button.textContent;
-      button.disabled = true;
-      button.textContent = label || 'Working…';
-    } else {
-      button.disabled = false;
-
-      if (button.dataset.originalText) {
-        button.textContent = button.dataset.originalText;
-      }
-    }
-  };
-
-  /*
-   * Retrieve a valid access token for protected Edge Functions.
-   * Refresh the session if the access token is missing.
-   */
-
-  async function getCurrentAccessToken() {
-    const {
-      data: sessionData,
-      error: sessionError
-    } = await client.auth.getSession();
-
-    if (sessionError) {
-      throw new Error(
-        `Could not retrieve your login session: ${sessionError.message}`
-      );
-    }
-
-    let session = sessionData?.session;
-
-    if (!session?.access_token) {
-      const refreshResult =
-        await client.auth.refreshSession();
-
-      if (refreshResult.error) {
-        throw new Error(
-          `Your login session has expired. Please log out and log in again. ${refreshResult.error.message}`
-        );
-      }
-
-      session = refreshResult.data?.session;
-    }
-
-    if (!session?.access_token) {
-      throw new Error(
-        'No valid access token was found. Please log out and log in again.'
-      );
-    }
-
-    return session.access_token;
-  }
-
-  /*
-   * Extract the actual response returned by an Edge Function.
-   */
-
-  async function getFunctionErrorMessage(error) {
-    let message = error?.message || 'Unknown error';
-
-    const context = error?.context;
-
-    if (context) {
-      try {
-        if (typeof context.json === 'function') {
-          const body = await context.clone().json();
-
-          if (body?.error) return body.error;
-          if (body?.message) return body.message;
-          if (body?.msg) return body.msg;
-
-          return JSON.stringify(body);
-        }
-
-        if (typeof context.text === 'function') {
-          const bodyText = await context.clone().text();
-
-          if (bodyText) {
-            try {
-              const body = JSON.parse(bodyText);
-
-              return (
-                body.error ||
-                body.message ||
-                body.msg ||
-                bodyText
-              );
-            } catch {
-              return bodyText;
-            }
-          }
-        }
-      } catch (readError) {
-        console.warn(
-          'Could not read Edge Function error response:',
-          readError
-        );
-      }
-    }
-
-    return message;
-  }
-
-  // Best-effort audit logging.
-
-  async function audit(
-    eventType,
-    entityType = null,
-    entityId = null,
-    details = {}
-  ) {
-    if (!client || !isAdmin) return;
-
-    try {
-      const { error } = await client.rpc(
-        'log_cacsf_admin_activity',
-        {
-          p_event_type: eventType,
-          p_entity_type: entityType,
-          p_entity_id:
-            entityId == null ? null : String(entityId),
-          p_details: details
-        }
-      );
-
-      if (error) {
-        console.warn(
-          'Audit logging failed:',
-          error.message
-        );
-      }
-    } catch (error) {
-      console.warn('Audit logging failed:', error);
-    }
-  }
-
-  /* ==========================================================
-     THEME
-     ========================================================== */
-
-  const savedTheme = () =>
-    localStorage.getItem('cacsf-admin-theme') || 'light';
-
-  function applyTheme(theme) {
-    document.body.dataset.adminTheme = theme;
-
-    const label = theme === 'dark' ? '☀' : '☾';
-
-    if (has('theme-toggle')) {
-      $('theme-toggle').textContent = label;
-    }
-
-    if (has('settings-theme')) {
-      $('settings-theme').textContent =
-        theme === 'dark'
-          ? 'Switch to light appearance'
-          : 'Switch to dark appearance';
-    }
-
-    if (has('login-theme')) {
-      $('login-theme').textContent = label;
-    }
-
-    localStorage.setItem('cacsf-admin-theme', theme);
-  }
-
-  function toggleTheme() {
-    applyTheme(
-      document.body.dataset.adminTheme === 'dark'
-        ? 'light'
-        : 'dark'
-    );
-  }
-
-  applyTheme(savedTheme());
-
-  [
-    'theme-toggle',
-    'settings-theme',
-    'login-theme'
-  ].forEach(id => {
-    $(id)?.addEventListener('click', toggleTheme);
-  });
-
-  /* ==========================================================
-     NAVIGATION
-     ========================================================== */
-
-  const routeLabels = {
-    overview: 'Dashboard',
-    'birthday-overview': 'Birthday overview',
-    'wedding-overview': 'Wedding anniversary overview',
-    directory: 'Alumni directory',
-    monthly: 'Monthly registrations',
-    birthdays: 'Birthday directory',
-    weddings: 'Wedding anniversaries',
-    'wedding-directory': 'Wedding directory',
-    'wedding-monthly': 'Wedding monthly registrations',
-    anniversaries: 'Anniversary directory',
-    media: 'Reunion media',
-    projects: 'Project gallery',
-    messages: 'Contact messages',
-    settings: 'Admin settings',
-    'admin-management': 'Admin management',
-    monitoring: 'Monitoring & security'
-  };
-
-  function setSuperAdminNavigation(allowed) {
-    document
-      .querySelectorAll(
-        '[data-route="admin-management"], [data-route="monitoring"]'
-      )
-      .forEach(link => {
-        link.hidden = !allowed;
-        link.style.display = allowed ? '' : 'none';
-      });
-  }
-
-  function navigate(route) {
-    if (route === 'weddings') route = 'wedding-directory';
-    if (!routeLabels[route]) {
-      route = 'overview';
-    }
-
-    if (
-      (route === 'admin-management' || route === 'monitoring') &&
-      !isSuperAdmin
-    ) {
-      route = 'overview';
-    }
-
-    document
-      .querySelectorAll('.page[id^="page-"]')
-      .forEach(page => {
-        page.hidden = page.id !== `page-${route}`;
-      });
-
-    document
-      .querySelectorAll('[data-route]')
-      .forEach(link => {
-        link.classList.toggle(
-          'active',
-          link.dataset.route === route
-        );
-      });
-
-    if (has('crumb-label')) {
-      $('crumb-label').textContent = routeLabels[route];
-    }
-    if (has('topbar-title')) $('topbar-title').textContent = routeLabels[route];
-    const inBirthday = ['birthday-overview','directory','monthly','birthdays'].includes(route);
-    const inWedding = ['wedding-overview','wedding-directory','wedding-monthly','anniversaries','weddings'].includes(route);
-    [['birthday-subnav',inBirthday],['wedding-subnav',inWedding]].forEach(([id,open]) => {
-      const menu = $(id); const toggle = document.querySelector(`[data-group-target="${id}"]`);
-      if (menu) menu.classList.toggle('open',open);
-      if (toggle) toggle.setAttribute('aria-expanded',open ? 'true' : 'false');
-    });
-
-    if (location.hash !== `#${route}`) {
-      history.replaceState(null, '', `#${route}`);
-    }
-
-    $('sidebar')?.classList.remove('open');
-    $('mobile-shade')?.classList.remove('show');
-
-    if (route === 'admin-management' && isSuperAdmin) {
-      loadAdmins();
-    }
-
-    if (route === 'monitoring' && isSuperAdmin) {
-      loadMonitoring();
-    }
-    if (route === 'weddings' || route === 'wedding-directory') renderWeddings();
-    if (route === 'wedding-monthly') renderWeddingMonthGrid();
-    if (route === 'anniversaries') renderAnniversaries();
-    if (route === 'birthday-overview') renderBirthdayOverview();
-    if (route === 'wedding-overview') renderWeddingOverview();
-  }
-
-  document
-    .querySelectorAll('[data-route]')
-    .forEach(link => {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        navigate(link.dataset.route);
-      });
-    });
-
-  window.addEventListener('hashchange', () => {
-    navigate(location.hash.slice(1));
-  });
-
-  document.querySelectorAll('[data-group-target]').forEach(button => {
-    button.addEventListener('click', () => {
-      const groupId = button.dataset.groupTarget;
-      const menu = $(groupId);
-      if (!menu) return;
-
-      const wasOpen = menu.classList.contains('open');
-      if (wasOpen) {
-        menu.classList.remove('open');
-        button.setAttribute('aria-expanded', 'false');
-        return;
-      }
-
-      // Keep only one section expanded at a time.
-      document.querySelectorAll('[data-group-target]').forEach(otherButton => {
-        const otherMenu = $(otherButton.dataset.groupTarget);
-        otherMenu?.classList.remove('open');
-        otherButton.setAttribute('aria-expanded', 'false');
-      });
-
-      menu.classList.add('open');
-      button.setAttribute('aria-expanded', 'true');
-      navigate(groupId === 'birthday-subnav' ? 'birthday-overview' : 'wedding-overview');
-    });
-  });
-
-  if (has('menu-toggle')) {
-    $('menu-toggle').addEventListener('click', () => {
-      $('sidebar')?.classList.toggle('open');
-      $('mobile-shade')?.classList.toggle('show');
-      $('menu-toggle')?.setAttribute('aria-expanded', $('sidebar')?.classList.contains('open') ? 'true' : 'false');
-    });
-  }
-
-  if (has('mobile-shade')) {
-    $('mobile-shade').addEventListener('click', () => {
-      $('sidebar')?.classList.remove('open');
-      $('mobile-shade')?.classList.remove('show');
-    });
-  }
-
-  if (has('today-label')) {
-    $('today-label').textContent =
-      new Date().toLocaleDateString(undefined, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-  }
-
-  /* ==========================================================
-     LOGIN PAGE
-     ========================================================== */
-
-  const loginForm = $('admin-login');
-
-  if (loginForm) {
-    if (has('login-theme')) {
-      applyTheme(savedTheme());
-    }
-
-    $('show-password')?.addEventListener('click', () => {
-      const field = $('login-password');
-      if (!field) return;
-
-      const show = field.type === 'password';
-
-      field.type = show ? 'text' : 'password';
-      $('show-password').textContent = show ? 'Hide' : 'Show';
-    });
-
-    $('forgot-password')?.addEventListener('click', async () => {
-      const email =
-        loginForm.elements.email?.value?.trim();
-
-      if (!email) {
-        say(
-          'login-status',
-          'Enter your administrator email address first.',
-          'error'
-        );
-
-        loginForm.elements.email?.focus();
-        return;
-      }
-
-      if (!client) {
-        say(
-          'login-status',
-          'Supabase configuration is missing. Check assets/js/config.js.',
-          'error'
-        );
-        return;
-      }
-
-      say('login-status', 'Sending password reset email…');
-
-      const redirectTo =
-        `${location.origin}${location.pathname.replace(/[^/]*$/, 'login.html')}`;
-
-      const { error } =
-        await client.auth.resetPasswordForEmail(
-          email,
-          { redirectTo }
-        );
-
-      say(
-        'login-status',
-        error
-          ? `Password reset failed: ${error.message}`
-          : 'If this email belongs to an administrator, a password reset link has been sent.',
-        error ? 'error' : 'success'
-      );
-    });
-
-    loginForm.addEventListener('submit', async e => {
-      e.preventDefault();
-
-      if (!client) {
-        say(
-          'login-status',
-          'Supabase configuration is missing. Check assets/js/config.js.',
-          'error'
-        );
-        return;
-      }
-
-      const button = $('login-submit');
-      setBusy(button, true, 'Signing in…');
-
-      const data = new FormData(loginForm);
-
-      const { error } =
-        await client.auth.signInWithPassword({
-          email: String(data.get('email') || '').trim(),
-          password: data.get('password')
-        });
-
-      setBusy(button, false);
-
-      if (error) {
-        say('login-status', error.message, 'error');
-        return;
-      }
-
-      location.href = 'index.html';
-    });
-  }
-
-  // Stop here on login page.
-  if (!has('admin-user')) return;
-
-  /* ==========================================================
-     CONNECTION AND ROLE VERIFICATION
-     ========================================================== */
-
-  function setConnection(message, kind = '') {
-    say('connection-status', message, kind);
-
-    if (has('connection-short')) {
-      if (has('overview-connection')) $('overview-connection').textContent = message;
-      $('connection-short').textContent =
-        kind === 'success'
-          ? 'Connected'
-          : kind === 'error'
-            ? 'Connection issue'
-            : 'Checking connection';
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root{--bg:#eef5ef;--surface:#fff;--text:#152d24;--muted:#66756c;--green:#b6ed43;--deep:#173d2f;--line:#dbe5dc;--shadow:0 18px 55px rgba(22,54,39,.09)}
+:root[data-theme="dark"]{--bg:#101b16;--surface:#192820;--text:#edf5ef;--muted:#a8b8ad;--green:#b6ed43;--deep:#0d2118;--line:#304338;--shadow:0 18px 55px rgba(0,0,0,.22)}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.6;transition:background .25s,color .25s}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit}
+
+.site-header{height:auto;min-height:82px;padding:16px 5.5%;display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line);position:relative;z-index:20;background:var(--bg)}
+.brand{display:flex;align-items:center;gap:10px;font:800 18px Manrope,sans-serif;letter-spacing:-.7px;line-height:1}
+.brand small{display:block;font:600 8px 'DM Sans';letter-spacing:2px;margin-top:5px}
+.brand-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--green);color:#173d2f;font-size:23px}
+.main-nav{display:flex;align-items:center;gap:clamp(10px,1.55vw,24px)}
+.main-nav>a,.nav-drop-btn{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.main-nav>a:hover,.main-nav>a.active,.nav-drop-btn:hover{color:var(--text)}
+.nav-drop{position:relative}
+.nav-drop-btn{background:none;border:0;cursor:pointer;padding:10px 0}
+.dropdown{display:none;position:absolute;top:100%;left:-18px;min-width:175px;padding:9px;background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}
+.dropdown a{display:block;padding:10px 12px;font-size:12px;border-radius:8px}
+.dropdown a:hover{background:var(--bg)}
+.nav-drop:hover .dropdown,.nav-drop.show .dropdown{display:block}
+.theme-toggle{width:36px;height:36px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:50%;cursor:pointer}
+.menu-toggle{display:none;background:transparent;border:0;color:var(--text);font-size:25px}
+
+.hero{max-width:1440px;margin:auto;padding:80px 8% 88px;display:grid;grid-template-columns:1fr 1.02fr;align-items:center;gap:6%}
+.eyebrow{font-size:10px;letter-spacing:2px;font-weight:700;color:#54856b}
+.hero h1,.page-hero h1{font:700 clamp(48px,6.5vw,88px)/1.02 Manrope,sans-serif;letter-spacing:-5px;margin:20px 0}
+.hero h1 em,.page-hero h1 em,h2 em{font-style:normal;color:#4c916c}
+.hero-copy>p,.page-hero>p{max-width:490px;color:var(--muted);font-size:16px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:20px;border-radius:30px;padding:14px 22px;font-size:12px;font-weight:700;border:1px solid transparent;cursor:pointer;transition:transform .2s,background .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--deep);color:#fff}
+.btn-primary span{color:var(--green)}
+.btn-outline{border-color:var(--line);color:var(--text);background:transparent}
+.btn-light{background:var(--green);color:#193629}
+.btn-small{padding:9px 14px}
+.hero-visual{height:480px;position:relative}
+.hero-photo{position:absolute;border:8px solid var(--surface);border-radius:22px;background-size:cover;background-position:center;box-shadow:var(--shadow)}
+.photo-one{inset:5px 22% 70px 0;background-image:url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85')}
+.photo-two{inset:155px 0 0 38%;background-image:url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=85')}
+.photo-note{position:absolute;bottom:25px;left:8%;padding:17px 22px;background:var(--green);color:#193629;border-radius:14px;box-shadow:var(--shadow)}
+.photo-note b,.photo-note span{display:block}
+.photo-note span{font-size:11px}
+
+.section{max-width:1280px;margin:auto;padding:78px 7%}
+.intro{display:grid;grid-template-columns:1fr 1fr;gap:9%;align-items:end;border-top:1px solid var(--line)}
+h2{font:700 clamp(32px,4vw,52px)/1.1 Manrope,sans-serif;letter-spacing:-2.5px;margin:14px 0}
+.intro p,.feature-card p,.section-heading p,.split-section p,.form-aside p,.project-feature p{color:var(--muted);font-size:14px}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;padding-top:10px}
+.feature-card{min-height:330px;border-radius:22px;padding:28px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;transition:transform .2s}
+.feature-card:hover{transform:translateY(-5px)}
+.feature-dark{background:#173d2f;color:#fff}
+.feature-green{background:var(--green);color:#193629}
+.feature-image{background:linear-gradient(0deg,rgba(10,29,19,.85),rgba(10,29,19,.08)),url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=900&q=85') center/cover;color:white}
+.card-number{font-size:9px;letter-spacing:1.7px;font-weight:700;opacity:.7}
+.feature-card h3{font:700 30px/1.12 Manrope,sans-serif;letter-spacing:-1px;margin:50px 0 8px}
+.feature-card p{max-width:250px;color:inherit;opacity:.78;font-size:12px}
+.round-arrow{position:absolute;right:25px;bottom:25px;border-radius:50%;background:var(--green);color:#173d2f;width:38px;height:38px;display:grid;place-items:center}
+.feature-green .round-arrow{background:#fff}
+.stats{display:grid;grid-template-columns:1.5fr repeat(3,1fr);align-items:center;gap:25px;border-top:1px solid var(--line)}
+.stat{border-left:1px solid var(--line);padding-left:25px}
+.stat strong{display:block;font:700 54px Manrope;color:#80a990;letter-spacing:-3px}
+.stat span{font-size:12px;color:var(--muted)}
+.cta{margin:35px auto 80px;background:#173d2f;color:white;border-radius:26px;padding:55px 6%;display:flex;align-items:center;justify-content:space-between;gap:30px}
+.cta .eyebrow{color:var(--green)}
+.cta h2{font-size:clamp(32px,4vw,48px)}
+.cta h2 em{color:var(--green)}
+.cta p{color:#c1d0c6;font-size:13px}
+.site-footer{padding:45px 7% 30px;background:var(--deep);color:white;display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap}
+.site-footer p{font-size:11px;color:#b8c9be}
+.site-footer>div{display:flex;gap:20px;font-size:11px}
+.site-footer>small{width:100%;border-top:1px solid #456052;padding-top:18px;color:#a8b8ad;font-size:10px}
+
+.page-hero{padding:90px 8% 75px;text-align:center;max-width:1100px;margin:auto}
+.page-hero h1{font-size:clamp(48px,6vw,76px)}
+.page-hero>p{margin:0 auto;max-width:600px}
+.page-hero.compact{padding-top:70px;padding-bottom:50px}
+.split-section{display:grid;grid-template-columns:1fr 1fr;gap:8%;align-items:center}
+.split-image,.history-image,.project-photo{min-height:440px;border-radius:22px;background:url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1000&q=85') center/cover}
+.values{display:grid;grid-template-columns:1fr 1.2fr;gap:8%;border-top:1px solid var(--line)}
+.value-list article{display:grid;grid-template-columns:55px 1fr;border-bottom:1px solid var(--line);padding:20px 0}
+.value-list article>b{color:#71a184}
+.value-list h3{margin:0;font:700 21px Manrope}
+.value-list p{margin:5px 0;color:var(--muted);font-size:13px}
+.history-body{display:grid;grid-template-columns:1fr 1fr;gap:8%;align-items:start}
+.history-image{min-height:550px;background-image:url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=85')}
+.timeline article{padding:0 0 30px 25px;border-left:1px solid #83a991;position:relative}
+.timeline article:before{content:"";position:absolute;left:-6px;top:4px;width:11px;height:11px;border-radius:50%;background:var(--green)}
+.timeline article span{font-size:9px;letter-spacing:1.5px;color:#54856b;font-weight:700}
+.timeline h3{font:700 24px Manrope;margin:8px 0}
+.timeline p{font-size:13px;color:var(--muted)}
+
+.form-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:9%;align-items:start}
+.form-aside h2{font-size:42px}
+.form-note{margin-top:28px;padding:17px;border-radius:12px;background:var(--surface);font-size:11px;color:var(--muted)}
+.site-form{background:var(--surface);padding:30px;border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}
+.site-form label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:700;color:var(--text)}
+.site-form input,.site-form select,.site-form textarea{width:100%;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);padding:12px 13px;outline:none;font-size:12px}
+.site-form input:focus,.site-form select:focus,.site-form textarea:focus{border-color:#75a887}
+.site-form label small{font-size:10px;color:var(--muted);font-weight:400}
+.site-form .full{grid-column:1/-1}
+.check-label{display:flex!important;flex-direction:row!important;align-items:flex-start;font-weight:400!important;line-height:1.5}
+.check-label input{width:auto;margin-top:2px}
+.site-form>.btn{margin-top:22px}
+.form-status{font-size:12px;color:#54856b;min-height:18px}
+.contact-detail{display:flex;flex-direction:column;margin-top:20px;font-size:12px}
+.contact-detail span{color:var(--muted)}
+
+.section-heading{display:flex;justify-content:space-between;align-items:end;gap:25px;margin-bottom:25px}
+.section-heading h2{margin-bottom:0}
+.section-heading p{max-width:330px}
+.project-feature{display:grid;grid-template-columns:1.1fr .9fr;gap:7%;align-items:center}
+.project-photo{min-height:420px;background-image:url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1000&q=85')}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.gallery-tile,.gallery-placeholder{min-height:230px;border-radius:17px;display:flex;flex-direction:column;justify-content:end;padding:20px;color:white;background-size:cover;background-position:center}
+.gallery-a{background-image:linear-gradient(0deg,#10291e99,transparent),url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=700&q=80')}
+.gallery-b{background-image:linear-gradient(0deg,#10291e99,transparent),url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=700&q=80')}
+.gallery-c{background-image:linear-gradient(0deg,#10291e99,transparent),url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=700&q=80')}
+.gallery-tile span{font-weight:700}
+.media-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-top:10px;padding-bottom:25px}
+.media-tab{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);padding:18px;border-radius:14px}
+.media-tab>b{font:700 24px Manrope;color:#76a389}
+.media-tab span{flex:1}
+.media-tab strong,.media-tab small{display:block}
+.media-tab strong{font-size:12px}
+.media-tab small{font-size:10px;color:var(--muted)}
+.media-tab i{font-style:normal}
+.media-tab:hover,.media-tab.active{border-color:#82a98f}
+.media-section{padding-top:45px}
+.gallery-placeholder{background:var(--surface);border:1px dashed #8da99a;color:var(--text);align-items:center;justify-content:center;text-align:center;min-height:220px}
+.gallery-placeholder small{color:var(--muted);max-width:230px}
+.gallery-item{position:relative;display:block;min-height:220px;border-radius:15px;overflow:hidden;background:var(--surface)}
+.gallery-item img{width:100%;height:240px;object-fit:cover;display:block;transition:transform .3s}
+.gallery-item:hover img{transform:scale(1.04)}
+.gallery-item span{position:absolute;bottom:0;left:0;right:0;padding:12px;background:linear-gradient(transparent,#000a);color:white;font-size:11px}
+.video-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.video-card{background:var(--surface);padding:12px;border-radius:15px}
+.video-card video{width:100%;max-height:330px;background:#111;border-radius:10px}
+.video-card p{font-size:12px}
+
+.admin-body{min-height:100vh}
+.admin-login{max-width:460px;margin:9vh auto;padding:35px}
+.admin-login .brand{margin-bottom:60px}
+.admin-login h1{font:700 48px/1.05 Manrope;letter-spacing:-2px}
+.admin-login h1 em{font-style:normal;color:#4c916c}
+.admin-login .site-form{margin-top:25px;display:grid;gap:17px}
+.back-link{display:inline-block;margin-top:20px;font-size:12px;color:var(--muted)}
+.admin-header{padding-left:6%;padding-right:6%}
+.admin-actions{display:flex;align-items:center;gap:15px;font-size:12px}
+.admin-main{max-width:1200px;margin:auto;padding:0 5% 70px}
+.admin-main .page-hero{text-align:left;padding-left:0;padding-top:50px}
+.admin-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-bottom:25px}
+.admin-stats>div,.admin-panel{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:25px}
+.admin-stats b{display:block;font:700 36px Manrope}
+.admin-stats span{font-size:11px;color:var(--muted)}
+.admin-panel{margin:18px 0}
+.admin-panel h2{font-size:30px}
+.table-wrap{overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:11px;text-align:left}
+th,td{padding:12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted)}
+#media-upload,#project-upload{max-width:720px;box-shadow:none;border:0;padding:0;background:transparent}
+.admin-panel .section-heading{margin-bottom:18px}
+
+@media(max-width:1050px){
+  .main-nav{gap:10px}
+  .main-nav>a,.nav-drop-btn{font-size:10px}
+  .hero{padding-left:6%;padding-right:6%}
+  .hero-visual{height:410px}
+  .section{padding-left:6%;padding-right:6%}
+}
+
+@media(max-width:820px){
+  .site-header{padding:14px 5%}
+  .menu-toggle{display:block}
+  .main-nav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);padding:18px 5%;border-bottom:1px solid var(--line);box-shadow:var(--shadow);align-items:stretch;flex-direction:column;gap:3px}
+  .main-nav.open{display:flex}
+  .main-nav>a,.nav-drop-btn{font-size:13px;padding:10px 0;text-align:left}
+  .nav-drop .dropdown{position:static;box-shadow:none;margin:0 0 8px 12px}
+  .theme-toggle{margin-top:8px}
+  .hero{grid-template-columns:1fr;padding-top:60px}
+  .hero-visual{height:400px}
+  .intro,.split-section,.history-body,.form-section,.project-feature,.values{grid-template-columns:1fr;gap:30px}
+  .feature-grid{grid-template-columns:1fr 1fr}
+  .feature-card:last-child{grid-column:1/-1}
+  .stats{grid-template-columns:1fr 1fr}
+  .stats>div:first-child{grid-column:1/-1}
+  .media-tabs{grid-template-columns:1fr}
+  .cta{margin-left:5%;margin-right:5%}
+  .site-footer{align-items:flex-start;flex-direction:column}
+  .site-footer>small{width:100%}
+}
+
+@media(max-width:560px){
+  .hero{padding:48px 6% 60px}
+  .hero h1,.page-hero h1{letter-spacing:-3px;font-size:47px}
+  .hero-visual{height:320px}
+  .photo-note{bottom:10px}
+  .section{padding:55px 6%}
+  .intro{gap:10px}
+  .feature-grid{grid-template-columns:1fr}
+  .feature-card,.feature-card:last-child{grid-column:auto;min-height:280px}
+  .stats{gap:18px}
+  .stat{padding-left:15px}
+  .stat strong{font-size:42px}
+  .cta{padding:35px 25px;align-items:flex-start;flex-direction:column}
+  .page-hero{padding:60px 6% 45px}
+  .form-grid{grid-template-columns:1fr}
+  .site-form{padding:20px}
+  .form-section{padding-top:25px}
+  .gallery-grid,.video-grid{grid-template-columns:1fr}
+  .section-heading{align-items:flex-start;flex-direction:column}
+  .admin-login{margin:4vh auto;padding:25px}
+  .admin-stats{grid-template-columns:1fr}
+  .admin-header{align-items:flex-start}
+  .admin-actions{font-size:10px}
+  .site-footer>div{flex-wrap:wrap}
+}
+
+ /* CACSF single-page alumni registration experience */
+.register-header{min-height:82px;padding:12px clamp(18px,6vw,80px);display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--surface);border-bottom:1px solid var(--line)}
+.register-brand{display:flex;align-items:center;gap:12px;font:800 17px Manrope,sans-serif;letter-spacing:-.5px}
+.register-brand img{width:58px;height:58px;object-fit:contain;border-radius:50%}
+.register-brand small{display:block;font:700 8px 'DM Sans',sans-serif;letter-spacing:1.7px;margin-top:4px;color:var(--muted)}
+.header-note{font-size:10px;letter-spacing:1.5px;font-weight:700;color:var(--muted);text-align:right}
+body:has(.logo-intro){min-height:100vh}
+body:has(.logo-intro) .page-hero.compact{padding-top:54px;padding-bottom:34px}
+body:has(.logo-intro) .page-hero h1{font-size:clamp(38px,5vw,64px);letter-spacing:-2.5px}
+body:has(.logo-intro) .form-section{max-width:1080px;grid-template-columns:.72fr 1.28fr;gap:6%;padding-top:28px}
+body:has(.logo-intro) .form-aside h2{font-size:clamp(30px,3.4vw,42px)}
+body:has(.logo-intro) .site-form{padding:clamp(20px,3vw,32px)}
+.logo-intro{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(ellipse at center,#25172d 0%,#100d15 56%,#050407 100%);animation:intro-away .8s ease 2.45s forwards;pointer-events:none}
+.logo-intro-inner{display:flex;flex-direction:column;align-items:center;gap:14px;perspective:1000px}
+.logo-intro img{display:block;width:min(72vw,510px);max-height:48vh;object-fit:contain;filter:drop-shadow(0 18px 28px #0009);transform-style:preserve-3d;animation:logo-turn 2.35s cubic-bezier(.2,.7,.25,1) both}
+.logo-intro-inner p{margin:0;color:#f2e6a5;font:800 clamp(12px,2vw,18px) Manrope,sans-serif;letter-spacing:2.5px;text-align:center;opacity:0;animation:intro-text .55s ease 1.1s forwards}
+.intro-caption{color:#d9cbdc;font:600 9px 'DM Sans',sans-serif;letter-spacing:3px;opacity:0;animation:intro-text .5s ease 1.55s forwards}
+@keyframes logo-turn{0%{transform:rotateY(-85deg) scale(.7);opacity:0}18%{opacity:1}48%{transform:rotateY(18deg) scale(1.03)}75%{transform:rotateY(-10deg) scale(1)}100%{transform:rotateY(0deg) scale(1)}}
+@keyframes intro-text{to{opacity:1}}
+@keyframes intro-away{to{opacity:0;visibility:hidden}}
+@media(max-width:820px){
+  .register-header{min-height:70px}
+  .register-brand img{width:48px;height:48px}
+  .header-note{max-width:130px;font-size:8px;line-height:1.5}
+  .form-section{grid-template-columns:1fr!important;gap:24px!important}
+  .form-aside h2{font-size:34px!important}
+  .page-hero.compact{padding:42px 6% 24px!important}
+  .page-hero h1{letter-spacing:-1.5px!important}
+  .site-form{padding:20px!important}
+  .form-grid{gap:13px}
+}
+@media(max-width:520px){
+  .form-grid{grid-template-columns:1fr}
+  .site-form .full{grid-column:auto}
+  .register-brand{font-size:14px}
+  .register-brand img{width:42px;height:42px}
+}
+@media(prefers-reduced-motion:reduce){
+  .logo-intro img,.logo-intro-inner p,.intro-caption,.logo-intro{animation-duration:.01ms!important;animation-delay:0ms!important}
+}
+
+/* CACSF registration page: centered premium green experience */
+:root{
+  --reg-bg:#f2f8f1;--reg-surface:#ffffff;--reg-text:#102d20;--reg-muted:#65776b;
+  --reg-line:#dce9dc;--reg-green:#35e45c;--reg-green-dark:#137c3b;
+  --reg-shadow:0 22px 70px rgba(13,55,31,.11);
+}
+:root[data-theme="dark"]{
+  --reg-bg:#07150e;--reg-surface:#10251a;--reg-text:#eff9f0;--reg-muted:#a8bbaa;
+  --reg-line:#294332;--reg-green:#45ed69;--reg-green-dark:#1b9b4d;
+  --reg-shadow:0 24px 75px rgba(0,0,0,.34);
+}
+body:has(.registration-main){
+  min-height:100vh;background:
+    radial-gradient(ellipse at 8% 8%,rgba(111,238,110,.18),transparent 32%),
+    radial-gradient(ellipse at 95% 28%,rgba(35,180,92,.11),transparent 30%),
+    var(--reg-bg);color:var(--reg-text);
+}
+body:has(.registration-main) .register-header{
+  width:min(1240px,calc(100% - 48px));margin:18px auto 0;padding:12px 18px;
+  min-height:74px;background:color-mix(in srgb,var(--reg-surface) 88%,transparent);
+  border:1px solid var(--reg-line);border-radius:18px;box-shadow:0 8px 28px rgba(12,48,27,.05);
+}
+body:has(.registration-main) .register-brand{color:var(--reg-text);gap:11px}
+body:has(.registration-main) .register-brand img{width:52px;height:52px}
+body:has(.registration-main) .register-brand small{color:var(--reg-muted)}
+body:has(.registration-main) .theme-toggle{
+  display:grid;place-items:center;width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--reg-line);background:var(--reg-surface);color:var(--reg-text);
+  font-size:19px;cursor:pointer;transition:transform .2s,border-color .2s;
+}
+body:has(.registration-main) .theme-toggle:hover{transform:rotate(-12deg);border-color:var(--reg-green-dark)}
+.registration-main{width:min(940px,calc(100% - 40px));margin:0 auto;padding:clamp(48px,7vw,82px) 0 36px}
+.registration-intro{text-align:center;max-width:850px;margin:0 auto}
+.intro-kicker{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border:1px solid var(--reg-line);border-radius:99px;background:var(--reg-surface);color:var(--reg-green-dark);font-size:9px;font-weight:800;letter-spacing:2px}
+.kicker-dot{width:7px;height:7px;border-radius:50%;background:var(--reg-green-dark);box-shadow:0 0 0 4px color-mix(in srgb,var(--reg-green) 20%,transparent)}
+.registration-intro h1{margin:23px 0 9px;font:800 clamp(43px,7.2vw,78px)/1.02 Manrope,sans-serif;letter-spacing:-4.8px;color:var(--reg-text)}
+.registration-intro h1 em{font-style:normal;color:var(--reg-green-dark)}
+.registration-intro h2{margin:0;font:700 clamp(27px,4.4vw,43px)/1.15 Manrope,sans-serif;letter-spacing:-2px;color:var(--reg-text)}
+.registration-intro h2 em{font-style:normal;color:var(--reg-green-dark)}
+.intro-support{margin:15px auto 0;max-width:570px;color:var(--reg-muted);font-size:clamp(13px,1.7vw,16px);line-height:1.7}
+.instruction-card{
+  display:flex;align-items:center;gap:15px;text-align:left;max-width:790px;margin:30px auto 0;
+  padding:17px 21px;border:1px solid color-mix(in srgb,var(--reg-green-dark) 22%,var(--reg-line));
+  border-radius:13px;background:linear-gradient(110deg,color-mix(in srgb,var(--reg-green) 12%,var(--reg-surface)),var(--reg-surface));
+  box-shadow:0 10px 30px rgba(17,75,38,.045);
+}
+.instruction-icon{flex:0 0 34px;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--reg-green);color:#073719;font-size:18px}
+.instruction-card p{margin:0;color:var(--reg-text);font-size:12px;line-height:1.65}
+.registration-form-wrap{max-width:790px;margin:30px auto 0}
+body:has(.registration-main) .registration-form{
+  padding:clamp(22px,4vw,38px);border:1px solid var(--reg-line);border-radius:22px;
+  background:var(--reg-surface);box-shadow:var(--reg-shadow);
+}
+.form-heading{margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--reg-line)}
+.form-step{color:var(--reg-green-dark);font-size:9px;font-weight:800;letter-spacing:2px}
+.form-heading h3{margin:7px 0 3px;font:750 25px Manrope,sans-serif;letter-spacing:-.8px;color:var(--reg-text)}
+.form-heading p{margin:0;color:var(--reg-muted);font-size:11px}
+.form-heading p b,.required-mark{color:#d65b48}
+body:has(.registration-main) .form-grid{gap:19px}
+body:has(.registration-main) .site-form label{gap:8px;color:var(--reg-text);font-size:11px;font-weight:700}
+body:has(.registration-main) .site-form input,
+body:has(.registration-main) .site-form select{
+  min-height:47px;padding:12px 14px;border:1px solid var(--reg-line);border-radius:10px;
+  background:var(--reg-bg);color:var(--reg-text);font-size:12px;transition:border-color .2s,box-shadow .2s;
+}
+body:has(.registration-main) .site-form input:focus,
+body:has(.registration-main) .site-form select:focus{
+  border-color:var(--reg-green-dark);box-shadow:0 0 0 3px color-mix(in srgb,var(--reg-green) 18%,transparent);outline:0;
+}
+body:has(.registration-main) .site-form input::placeholder{color:var(--reg-muted);opacity:.75}
+body:has(.registration-main) .site-form input[type=file]{padding:9px;background:color-mix(in srgb,var(--reg-green) 7%,var(--reg-bg))}
+body:has(.registration-main) .site-form label small{color:var(--reg-muted);font-size:10px;font-weight:400}
+.optional-label{display:inline!important;margin-left:4px}
+body:has(.registration-main) .site-form .check-label{font-size:11px;line-height:1.6;color:var(--reg-muted)}
+body:has(.registration-main) .site-form .check-label input{min-height:0;accent-color:var(--reg-green-dark)}
+.registration-submit{
+  width:100%;min-height:51px;margin-top:24px!important;border-radius:11px!important;
+  background:linear-gradient(105deg,#19b84e,#50e969)!important;color:#062d16!important;
+  font-size:13px!important;font-weight:800!important;box-shadow:0 9px 22px rgba(35,190,81,.2);
+}
+.registration-submit span{font-size:18px}
+.registration-submit:hover{filter:brightness(1.03);transform:translateY(-2px)}
+body:has(.registration-main) .form-status{margin:13px 0 0;min-height:18px;color:var(--reg-green-dark);font-size:12px}
+.registration-footnote{text-align:center;margin:25px 0 0;color:var(--reg-muted);font-size:10px;letter-spacing:1.2px}
+:root[data-theme="dark"] .registration-intro h1 em,
+:root[data-theme="dark"] .registration-intro h2 em{color:#59e77b}
+:root[data-theme="dark"] .intro-kicker,
+:root[data-theme="dark"] .form-step{color:#65eb83}
+:root[data-theme="dark"] .instruction-card{background:linear-gradient(110deg,#153d25,#10251a);border-color:#315b3d}
+:root[data-theme="dark"] .instruction-card p{color:#e5f4e7}
+
+@media(max-width:700px){
+  .registration-main{width:min(100% - 30px,560px);padding-top:48px}
+  .registration-intro h1{letter-spacing:-2.8px}
+  .registration-intro h2{letter-spacing:-1.2px}
+  .instruction-card{margin-top:23px;padding:15px;align-items:flex-start}
+  .registration-form-wrap{margin-top:22px}
+  body:has(.registration-main) .register-header{width:calc(100% - 28px);margin-top:12px}
+}
+@media(max-width:520px){
+  .registration-main{width:calc(100% - 24px);padding-top:38px}
+  .registration-intro h1{font-size:clamp(39px,11vw,55px);letter-spacing:-2.5px}
+  .registration-intro h2{font-size:clamp(25px,7.2vw,33px)}
+  body:has(.registration-main) .form-grid{grid-template-columns:1fr}
+  body:has(.registration-main) .site-form .full{grid-column:1/-1}
+  body:has(.registration-main) .registration-form{padding:20px}
+  .register-brand{font-size:14px}
+  body:has(.registration-main) .register-brand img{width:44px;height:44px}
+}
+@media(prefers-reduced-motion:reduce){.registration-submit,.theme-toggle{transition:none}}
+
+/* Required marker stays beside its field label (not on a separate line). */
+body:has(.registration-main) .site-form label .field-label{
+  display:inline-flex;flex-direction:row;align-items:baseline;gap:4px;min-height:0;
+  width:max-content;max-width:100%;line-height:1.35;
+}
+body:has(.registration-main) .site-form label .required-mark{
+  display:inline!important;flex:0 0 auto;color:#d65b48;font-weight:800;line-height:1;
+}
+
+/* Fellowship photograph background with a protective green veil for legibility. */
+body:has(.registration-main){
+  background-image:linear-gradient(135deg,rgba(3,27,15,.76),rgba(8,48,25,.60) 48%,rgba(3,20,13,.76)),
+    url('../cacsf-fellowship-background.webp');
+  background-position:center center;background-size:cover;background-repeat:no-repeat;background-attachment:fixed;
+}
+body:has(.registration-main) .register-header{
+  background:color-mix(in srgb,var(--reg-surface) 90%,transparent);backdrop-filter:blur(14px);
+}
+body:has(.registration-main) .registration-intro .intro-kicker{
+  box-shadow:0 8px 26px rgba(0,0,0,.10);
+}
+body:has(.registration-main) .registration-form{
+  background:color-mix(in srgb,var(--reg-surface) 95%,transparent);
+  backdrop-filter:blur(16px);
+}
+:root[data-theme="dark"] body:has(.registration-main){
+  background-image:linear-gradient(135deg,rgba(0,10,5,.84),rgba(1,23,11,.77) 48%,rgba(0,9,5,.87)),
+    url('../cacsf-fellowship-background.webp');
+}
+@media(max-width:700px){
+  body:has(.registration-main){background-attachment:scroll;background-position:center top}
+}
+
+/* LIGHT MODE READABILITY FIX — registration introduction */
+:root:not([data-theme="dark"]) .registration-intro h1 em,
+:root:not([data-theme="dark"]) .registration-intro h2 em{
+  color:#176b35;
+}
+:root:not([data-theme="dark"]) .registration-intro .intro-support{
+  color:#344f3d;
+}
+
+/* DARK MODE INTRODUCTION READABILITY */
+:root[data-theme="dark"] .registration-intro h1 em,
+:root[data-theme="dark"] .registration-intro h2 em{
+  color:#59e77b;
+}
+:root[data-theme="dark"] .registration-intro .intro-support{
+  color:#d0dfd3;
+}
+/* =========================================
+   REGISTRATION INTRO — LIGHT MODE READABILITY
+   ========================================= */
+
+:root[data-theme="light"] .registration-intro h1,
+:root[data-theme="light"] .registration-intro h2 {
+    color: #173522 !important;
+}
+
+:root[data-theme="light"] .registration-intro h1 em,
+:root[data-theme="light"] .registration-intro h2 em {
+    color: #176b35 !important;
+}
+
+:root[data-theme="light"] .registration-intro .intro-support {
+    color: #344f3d !important;
+}
+
+/* Keep the introduction readable in dark mode too */
+
+:root[data-theme="dark"] .registration-intro h1,
+:root[data-theme="dark"] .registration-intro h2 {
+    color: #f1f5f1 !important;
+}
+
+:root[data-theme="dark"] .registration-intro h1 em,
+:root[data-theme="dark"] .registration-intro h2 em {
+    color: #59e77b !important;
+}
+
+:root[data-theme="dark"] .registration-intro .intro-support {
+    color: #d0dfd3 !important;
+}
+/* Registration introduction — light mode colors */
+:root[data-theme="light"] .registration-intro h1,
+:root[data-theme="light"] .registration-intro h2 {
+    color: #ffffff !important;
+}
+
+:root[data-theme="light"] .registration-intro h1 em,
+:root[data-theme="light"] .registration-intro h2 em {
+    color: #ffdf00 !important;
+}
+
+:root[data-theme="light"] .registration-intro .intro-support {
+    color: #90EE90 !important;
+}
+/* CACSF LIBERATION FAMILY FOOTER */
+.registration-footnote {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 30px auto 20px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-align: left;
+    color: #ffffff;
+}
+
+.registration-footnote img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.registration-footnote span {
+    color: #ffffff;
+    font-weight: 800;
+}
+
+@media (max-width: 480px) {
+    .registration-footnote {
+        font-size: 16px;
+        gap: 8px;
     }
 
-    const dot = document.querySelector('.connection');
-
-    if (dot) {
-      dot.classList.toggle('ok', kind === 'success');
+    .registration-footnote img {
+        width: 45px;
+        height: 45px;
     }
-  }
+}
 
-  async function verifyRoles() {
-    if (!client) {
-      throw new Error(
-        'Supabase configuration is missing. Check assets/js/config.js.'
-      );
-    }
+/* =========================================
+   CACSF ALUMNI FELLOWSHIP INTRO ANIMATION
+   TOTAL DURATION: EXACTLY 6 SECONDS
+   LOGO ROTATION: EXACTLY 4 SECONDS
+========================================= */
 
-    const [
-      { data: adminData, error: adminError },
-      { data: superData, error: superError }
-    ] = await Promise.all([
-      client.rpc('is_cacsf_admin'),
-      client.rpc('is_cacsf_super_admin')
-    ]);
-
-    if (adminError) {
-      throw new Error(
-        `Administrator verification failed: ${adminError.message}`
-      );
-    }
-
-    if (superError) {
-      throw new Error(
-        `Super Admin verification failed: ${superError.message}`
-      );
-    }
-
-    isAdmin = adminData === true;
-    isSuperAdmin = superData === true;
-
-    if (!isAdmin) {
-      throw new Error(
-        'This account is not an active CACSF administrator.'
-      );
-    }
-
-    setSuperAdminNavigation(isSuperAdmin);
-  }
-
-  /* ==========================================================
-     ADMIN PRESENCE AND LOGIN HISTORY
-     ========================================================== */
-
-  async function startPresence() {
-    if (!isAdmin) return;
-
-    const sendHeartbeat = async () => {
-      try {
-        const { error } = await client.rpc(
-          'heartbeat_cacsf_admin'
-        );
-
-        if (error) {
-          console.warn(
-            'Administrator heartbeat failed:',
-            error.message
-          );
-        }
-      } catch (error) {
-        console.warn('Administrator heartbeat failed:', error);
-      }
-    };
-
-    await sendHeartbeat();
-
-    heartbeatTimer = window.setInterval(
-      sendHeartbeat,
-      30000
+.logo-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(
+        ellipse at center,
+        #25172d 0%,
+        #100d15 56%,
+        #050407 100%
     );
 
-    const sessionKey =
-      `cacsf-admin-login-recorded-${currentUser.id}`;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: none;
 
-    if (!sessionStorage.getItem(sessionKey)) {
-      const { error } = await client.rpc(
-        'record_cacsf_admin_session',
-        { p_event_type: 'login' }
-      );
+    animation: cacsf-screen-fade 1s ease-in-out 5s forwards !important;
+}
 
-      if (!error) {
-        sessionStorage.setItem(sessionKey, '1');
-      } else {
-        console.warn(
-          'Login event could not be recorded:',
-          error.message
-        );
-      }
-    }
-  }
+.logo-intro-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    gap: 18px !important;
+    perspective: 1400px;
+    text-align: center;
+}
 
-  async function signOut() {
-    if (client && isAdmin) {
-      try {
-        await client.rpc(
-          'record_cacsf_admin_session',
-          { p_event_type: 'logout' }
-        );
-      } catch (error) {
-        console.warn('Logout event could not be recorded:', error);
-      }
-    }
+/* LOGO: ONE SMOOTH 3D ROTATION IN 4 SECONDS */
 
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer);
-    }
+.logo-intro img {
+    display: block;
+    width: min(65vw, 420px);
+    max-height: 42vh;
+    object-fit: contain;
 
-    if (client) {
-      await client.auth.signOut();
-    }
+    transform-style: preserve-3d;
+    transform-origin: center center;
 
-    location.href = 'login.html';
-  }
+    filter: drop-shadow(0 18px 28px #0009);
 
-  $('logout')?.addEventListener('click', signOut);
-  $('settings-logout')?.addEventListener('click', signOut);
+    opacity: 1;
 
-  async function requireSession() {
-    if (!client) {
-      setConnection(
-        'Supabase configuration is missing. Check assets/js/config.js.',
-        'error'
-      );
-      return;
-    }
+    animation: cacsf-logo-rotation 4s linear 0s 1 both !important;
 
-    const { data, error } = await client.auth.getSession();
+    will-change: transform;
+}
 
-    if (error || !data?.session) {
-      location.href = 'login.html';
-      return;
-    }
+/* HIDE THE OLD INTRODUCTION TEXT */
 
-    currentUser = data.session.user;
+.logo-intro-inner > p,
+.logo-intro-inner > .intro-caption,
+.logo-intro > .intro-caption {
+    display: none !important;
+}
 
-    $('admin-user').textContent =
-      currentUser.email || 'Administrator';
-    if (has('welcome-admin')) $('welcome-admin').textContent = (currentUser.email || 'Administrator').split('@')[0];
+/* TEXT CONTAINER */
 
-    if (has('settings-email')) {
-      $('settings-email').textContent =
-        currentUser.email || 'Administrator';
-    }
+.intro-animated-text {
+    width: 100%;
+    max-width: 950px;
+    padding: 0 20px;
 
-    try {
-      await verifyRoles();
-      await startPresence();
-      await loadAll();
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-      const initialRoute = location.hash.slice(1);
+    gap: 9px;
+    text-align: center;
+    overflow: hidden;
+}
 
-      navigate(
-        routeLabels[initialRoute]
-          ? initialRoute
-          : 'overview'
-      );
-    } catch (error) {
-      console.error(error);
+/* CACSF — VERY LARGE AND EXTRA BOLD */
 
-      setConnection(error.message, 'error');
+.intro-cacsf {
+    display: block;
+    width: 100%;
+    margin: 0 !important;
 
-      alert(
-        error.message +
-        ' You will be returned to the login page.'
-      );
+    color: #f2e6a5 !important;
 
-      await client.auth.signOut();
-      location.href = 'login.html';
-    }
-  }
+    font-family: Manrope, sans-serif !important;
+    font-size: clamp(48px, 9vw, 82px) !important;
+    font-weight: 900 !important;
 
-  /* ==========================================================
-     LOAD EXISTING DASHBOARD DATA
-     ========================================================== */
+    letter-spacing: 5px !important;
+    line-height: 1.1 !important;
 
-  async function loadTable(table) {
-    const { data, error } = await client
-      .from(table)
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5000);
+    text-align: center !important;
 
-    if (error) {
-      throw new Error(`${table}: ${error.message}`);
-    }
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
 
-    return data || [];
-  }
+    animation: cacsf-text-write .75s steps(5, end) 1s forwards !important;
+}
 
-  async function loadAll() {
-    if (!client) {
-      setConnection(
-        'Supabase configuration is missing. Check assets/js/config.js.',
-        'error'
-      );
-      return;
-    }
+/* ALUMNI FELLOWSHIP */
 
-    setConnection('Loading live records from Supabase…');
+.intro-line-one {
+    display: block;
+    width: 100%;
 
-    try {
-      const results = await Promise.all([
-        loadTable('alumni'),
-        loadTable('media'),
-        loadTable('project_gallery'),
+    color: #ffffff !important;
 
-        isSuperAdmin
-          ? loadTable('messages')
-          : Promise.resolve([]),
-        loadTable('wedding_registrations').catch(error => {
-          console.warn('Wedding registrations could not be loaded:', error.message);
-          return [];
-        })
-      ]);
+    font-family: Manrope, sans-serif !important;
+    font-size: clamp(25px, 4.5vw, 43px) !important;
+    font-weight: 800 !important;
 
-      alumni = results[0];
-      media = results[1];
-      projects = results[2];
-      messages = results[3];
-      weddings = results[4];
+    letter-spacing: 2px !important;
+    line-height: 1.25 !important;
 
-      renderAll();
+    text-align: center !important;
+    white-space: normal;
 
-      setConnection(
-        `Connected · ${alumni.length} alumni · ${media.length} media · ${projects.length} projects · ${messages.length} messages · ${weddings.length} weddings`,
-        'success'
-      );
-    } catch (error) {
-      console.error(error);
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
 
-      setConnection(
-        `Could not load live data: ${error.message}. Check Supabase table names and Row Level Security policies.`,
-        'error'
-      );
-    }
-  }
+    animation: cacsf-text-write 1s steps(17, end) 2s forwards !important;
+}
 
-  $('refresh-all')?.addEventListener('click', loadAll);
+/* FEDERAL POLYTECHNIC ADO, EKITI */
 
-  /* ==========================================================
-     SUPER ADMIN — ADMINISTRATOR MANAGEMENT
-     ========================================================== */
+.intro-line-two {
+    display: block;
+    width: 100%;
 
-  function adminRoleLabel(role) {
-    return role === 'super_admin'
-      ? 'Super Admin'
-      : 'Administrator';
-  }
+    color: #ffffff !important;
 
-  function getAdminStatus(admin) {
-    if (
-      ['pending', 'active', 'suspended'].includes(admin.status)
-    ) {
-      return admin.status;
+    font-family: Manrope, sans-serif !important;
+    font-size: clamp(20px, 3.5vw, 32px) !important;
+    font-weight: 800 !important;
+
+    letter-spacing: 1.5px !important;
+    line-height: 1.4 !important;
+
+    text-align: center !important;
+    white-space: normal;
+
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+
+    animation: cacsf-text-write 1.2s steps(27, end) 3.1s forwards !important;
+}
+
+/* TEXT WRITING EFFECT */
+
+@keyframes cacsf-text-write {
+    0% {
+        opacity: 1;
+        clip-path: inset(0 100% 0 0);
     }
 
-    return admin.is_active ? 'active' : 'suspended';
-  }
+    100% {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+    }
+}
 
-  async function loadAdmins() {
-    if (!isSuperAdmin) return;
+/* EXACT FOUR-SECOND 3D ROTATION */
 
-    const table = $('admin-users-table');
-
-    if (table) {
-      table.innerHTML =
-        '<tr><td colspan="5" class="empty-cell">Loading administrators…</td></tr>';
+@keyframes cacsf-logo-rotation {
+    0% {
+        transform: rotateY(0deg);
     }
 
-    try {
-      const { data, error } = await client
-        .from('admin_users')
-        .select(
-          'user_id,email,role,is_active,status,invitation_accepted_at,created_at,updated_at'
-        )
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      const query = (
-        $('admin-search')?.value || ''
-      ).trim().toLowerCase();
-
-      const rows = (data || []).filter(r =>
-        [
-          r.email,
-          r.role,
-          r.user_id,
-          getAdminStatus(r)
-        ].join(' ').toLowerCase().includes(query)
-      );
-
-      if (has('admin-account-count')) {
-        $('admin-account-count').textContent =
-          `${data.length} administrator account${data.length === 1 ? '' : 's'}`;
-      }
-
-      if (!table) return;
-
-      table.innerHTML = rows.length
-        ? rows.map(r => {
-            const status = getAdminStatus(r);
-
-            const statusClass =
-              status === 'active'
-                ? 'success'
-                : status === 'pending'
-                  ? 'warning'
-                  : 'muted';
-
-            const statusLabel =
-              status === 'pending'
-                ? 'Pending'
-                : status === 'active'
-                  ? 'Active'
-                  : 'Suspended';
-
-            const accepted =
-              Boolean(r.invitation_accepted_at);
-
-            let toggleLabel = 'Suspend';
-            let toggleDisabled = '';
-
-            if (status === 'suspended') {
-              if (accepted) {
-                toggleLabel = 'Reactivate';
-              } else {
-                toggleLabel = 'Awaiting acceptance';
-                toggleDisabled = 'disabled';
-              }
-            }
-
-            return `
-              <tr>
-                <td>${esc(r.email || r.user_id)}</td>
-
-                <td>${esc(adminRoleLabel(r.role))}</td>
-
-                <td>
-                  <span class="status-pill ${statusClass}">
-                    ${statusLabel}
-                  </span>
-                </td>
-
-                <td>${esc(fmtDate(r.created_at))}</td>
-
-                <td class="admin-row-actions">
-                  <select
-                    aria-label="Change administrator role"
-                    data-admin-role="${esc(r.user_id)}"
-                  >
-                    <option value="admin" ${r.role === 'admin' ? 'selected' : ''}>
-                      Administrator
-                    </option>
-
-                    <option value="super_admin" ${r.role === 'super_admin' ? 'selected' : ''}>
-                      Super Admin
-                    </option>
-                  </select>
-
-                  <button
-                    type="button"
-                    class="action-link"
-                    data-admin-toggle="${esc(r.user_id)}"
-                    data-status="${status}"
-                    data-accepted="${accepted ? 'true' : 'false'}"
-                    ${toggleDisabled}
-                  >
-                    ${toggleLabel}
-                  </button>
-
-                  <button
-                    type="button"
-                    class="action-link"
-                    data-admin-remove="${esc(r.user_id)}"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            `;
-          }).join('')
-        : '<tr><td colspan="5" class="empty-cell">No administrator accounts match this search.</td></tr>';
-
-    } catch (error) {
-      console.error(error);
-
-      if (table) {
-        table.innerHTML = `
-          <tr>
-            <td colspan="5" class="empty-cell">
-              Could not load administrators: ${esc(error.message)}
-            </td>
-          </tr>
-        `;
-      }
+    100% {
+        transform: rotateY(360deg);
     }
-  }
+}
 
-  $('refresh-admins')?.addEventListener(
-    'click',
-    loadAdmins
-  );
+/* COMPLETE SCREEN FADES OUT FROM 5 TO 6 SECONDS */
 
-  $('admin-search')?.addEventListener(
-    'input',
-    loadAdmins
-  );
-
-  /* ==========================================================
-     SUPER ADMIN INVITATION
-     ========================================================== */
-
-  $('admin-invite-form')?.addEventListener(
-    'submit',
-    async e => {
-      e.preventDefault();
-
-      if (!isSuperAdmin) {
-        say(
-          'admin-invite-status',
-          'Only an active Super Admin can invite administrators.',
-          'error'
-        );
-        return;
-      }
-
-      const form = e.currentTarget;
-
-      const email = String(
-        form.elements.email?.value || ''
-      ).trim().toLowerCase();
-
-      const role = String(
-        form.elements.role?.value || 'admin'
-      ).trim();
-
-      const button =
-        form.querySelector('[type="submit"]');
-
-      if (!email) {
-        say(
-          'admin-invite-status',
-          'Enter an email address.',
-          'error'
-        );
-        return;
-      }
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        say(
-          'admin-invite-status',
-          'Enter a valid email address.',
-          'error'
-        );
-        return;
-      }
-
-      if (!['admin', 'super_admin'].includes(role)) {
-        say(
-          'admin-invite-status',
-          'Select a valid administrator role.',
-          'error'
-        );
-        return;
-      }
-
-      setBusy(button, true, 'Checking account…');
-
-      say(
-        'admin-invite-status',
-        'Checking your Super Admin session…'
-      );
-
-      try {
-        const accessToken =
-          await getCurrentAccessToken();
-
-        const {
-          data: stillSuperAdmin,
-          error: roleCheckError
-        } = await client.rpc('is_cacsf_super_admin');
-
-        if (roleCheckError) {
-          throw new Error(
-            `Could not verify Super Admin permission: ${roleCheckError.message}`
-          );
-        }
-
-        if (stillSuperAdmin !== true) {
-          throw new Error(
-            'Your account does not currently have active Super Admin permission.'
-          );
-        }
-
-        async function sendInvitation(replaceExisting = false) {
-          const { data, error } =
-            await client.functions.invoke(
-              'cacsf-admin-invite',
-              {
-                body: {
-                  email,
-                  role,
-                  replace_existing: replaceExisting
-                },
-                headers: {
-                  Authorization: `Bearer ${accessToken}`
-                }
-              }
-            );
-
-          if (error) {
-            throw new Error(
-              await getFunctionErrorMessage(error)
-            );
-          }
-
-          if (data?.error && !data?.account_exists) {
-            throw new Error(data.error);
-          }
-
-          return data;
-        }
-
-        say(
-          'admin-invite-status',
-          'Checking whether this email already has a Supabase account…'
-        );
-
-        let data = await sendInvitation(false);
-
-        if (
-          data?.account_exists === true ||
-          data?.code === 'EXISTING_AUTH_ACCOUNT'
-        ) {
-          const accountStatus =
-            data.account_confirmed
-              ? 'Its email has already been confirmed.'
-              : 'Its email has not yet been confirmed.';
-
-          const confirmed = window.confirm(
-            `An account already exists for ${email}.\n\n` +
-            `${accountStatus}\n\n` +
-            `If you continue:\n` +
-            `1. The old Supabase Auth account will be permanently deleted.\n` +
-            `2. Its old administrator record will be removed.\n` +
-            `3. A fresh invitation will be sent to this email.\n\n` +
-            `The person will need to accept the new invitation and establish their password again.\n\n` +
-            `Do you want to permanently delete the old account and send a fresh invitation?`
-          );
-
-          if (!confirmed) {
-            say(
-              'admin-invite-status',
-              'Invitation cancelled. The existing account has not been deleted.',
-              'success'
-            );
-            return;
-          }
-
-          say(
-            'admin-invite-status',
-            'Deleting the old account and preparing a fresh invitation…'
-          );
-
-          data = await sendInvitation(true);
-        }
-
-        if (data?.error) {
-          throw new Error(data.error);
-        }
-
-        if (data?.success !== true) {
-          throw new Error(
-            data?.message ||
-            'The invitation request did not return a success confirmation.'
-          );
-        }
-
-        say(
-          'admin-invite-status',
-          data.message ||
-            `Administrator invitation sent to ${email}.`,
-          'success'
-        );
-
-        form.reset();
-
-        await loadAdmins();
-
-        await audit(
-          data.old_account_deleted
-            ? 'admin_account_replaced_and_invited'
-            : 'admin_invited',
-          'admin_users',
-          null,
-          {
-            email,
-            role,
-            old_account_deleted:
-              Boolean(data.old_account_deleted)
-          }
-        );
-
-      } catch (error) {
-        console.error(
-          'Administrator invitation failed:',
-          error
-        );
-
-        say(
-          'admin-invite-status',
-          `Invitation failed: ${error.message || 'Unknown error'}`,
-          'error'
-        );
-
-      } finally {
-        setBusy(button, false);
-      }
-    }
-  );
-
-  /* ==========================================================
-     CHANGE ADMINISTRATOR ROLE
-     ========================================================== */
-
-  document.addEventListener('change', async e => {
-    const select =
-      e.target.closest('[data-admin-role]');
-
-    if (!select || !isSuperAdmin) return;
-
-    const userId = select.dataset.adminRole;
-    const newRole = select.value;
-
-    if (!confirm(
-      `Change this administrator's role to ${adminRoleLabel(newRole)}?`
-    )) {
-      await loadAdmins();
-      return;
+@keyframes cacsf-screen-fade {
+    0% {
+        opacity: 1;
+        visibility: visible;
     }
 
-    select.disabled = true;
-
-    try {
-      const { error } = await client
-        .from('admin_users')
-        .update({
-          role: newRole,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      await audit(
-        'admin_role_changed',
-        'admin_users',
-        userId,
-        { role: newRole }
-      );
-
-      await loadAdmins();
-
-    } catch (error) {
-      alert(
-        `Could not change administrator role: ${error.message}`
-      );
-
-      await loadAdmins();
+    100% {
+        opacity: 0;
+        visibility: hidden;
     }
-  });
+}
 
-  /* ==========================================================
-     SUSPEND, REACTIVATE OR REMOVE ADMINISTRATOR
-     ========================================================== */
+/* TABLETS */
 
-  document.addEventListener('click', async e => {
-    const toggle =
-      e.target.closest('[data-admin-toggle]');
-
-    const remove =
-      e.target.closest('[data-admin-remove]');
-
-    if (!isSuperAdmin) return;
-
-    if (toggle) {
-      const userId = toggle.dataset.adminToggle;
-      const currentStatus = toggle.dataset.status;
-
-      const invitationAccepted =
-        toggle.dataset.accepted === 'true';
-
-      let nextStatus;
-      let nextActive;
-
-      if (currentStatus === 'suspended') {
-        if (!invitationAccepted) {
-          alert(
-            'This administrator has not accepted the invitation yet. They must accept the invitation before you can reactivate the account.'
-          );
-          return;
-        }
-
-        nextStatus = 'active';
-        nextActive = true;
-
-      } else {
-        nextStatus = 'suspended';
-        nextActive = false;
-      }
-
-      const action =
-        nextStatus === 'active' ? 'Reactivate' : 'Suspend';
-
-      if (!confirm(
-        `${action} this administrator?`
-      )) {
-        return;
-      }
-
-      setBusy(
-        toggle,
-        true,
-        nextActive ? 'Activating…' : 'Suspending…'
-      );
-
-      try {
-        const { error } = await client
-          .from('admin_users')
-          .update({
-            status: nextStatus,
-            is_active: nextActive,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
-
-        if (error) throw error;
-
-        await audit(
-          nextActive
-            ? 'admin_reactivated'
-            : 'admin_suspended',
-          'admin_users',
-          userId,
-          {
-            status: nextStatus,
-            is_active: nextActive
-          }
-        );
-
-        await loadAdmins();
-
-      } catch (error) {
-        alert(
-          `Could not update administrator status: ${error.message}`
-        );
-
-        await loadAdmins();
-      }
+@media (max-width: 820px) {
+    .logo-intro img {
+        width: min(70vw, 360px);
+        max-height: 38vh;
     }
 
-    if (remove) {
-      const userId = remove.dataset.adminRemove;
-
-      if (!confirm(
-        'PERMANENTLY DELETE THIS ADMINISTRATOR?\n\n' +
-        'This will delete:\n' +
-        '1. Their CACSF administrator record.\n' +
-        '2. Their Supabase Authentication account.\n\n' +
-        'They will no longer be able to sign in.\n' +
-        'You can invite the same email again later.\n\n' +
-        'This action cannot be undone.\n\n' +
-        'Do you want to continue?'
-      )) {
-        return;
-      }
-
-      setBusy(remove, true, 'Removing…');
-
-      try {
-        const accessToken = await getCurrentAccessToken();
-
-        const {
-          data: stillSuperAdmin,
-          error: roleCheckError
-        } = await client.rpc('is_cacsf_super_admin');
-
-        if (roleCheckError) {
-          throw new Error(roleCheckError.message);
-        }
-
-        if (stillSuperAdmin !== true) {
-          throw new Error(
-            'Only an active Super Admin can permanently remove administrators.'
-          );
-        }
-
-        const { data, error } =
-          await client.functions.invoke(
-            'cacsf-admin-remove',
-            {
-              body: {
-                user_id: userId
-              },
-              headers: {
-                Authorization: `Bearer ${accessToken}`
-              }
-            }
-          );
-
-        if (error) {
-          throw new Error(
-            await getFunctionErrorMessage(error)
-          );
-        }
-
-        if (data?.error) {
-          throw new Error(data.error);
-        }
-
-        if (data?.success !== true) {
-          throw new Error(
-            data?.message ||
-            'The administrator could not be removed.'
-          );
-        }
-
-        await audit(
-          'admin_access_removed',
-          'admin_users',
-          userId,
-          {
-            email: data.email,
-            auth_account_deleted: data.auth_account_deleted,
-            admin_record_deleted: data.admin_record_deleted
-          }
-        );
-
-        alert(
-          data.message ||
-          'Administrator successfully deleted.'
-        );
-
-        await loadAdmins();
-
-      } catch (error) {
-        console.error(
-          'Administrator removal failed:',
-          error
-        );
-
-        alert(
-          `Could not remove administrator: ${error.message || 'Unknown error'}`
-        );
-
-        await loadAdmins();
-
-      } finally {
-        setBusy(remove, false);
-      }
-    }
-  });
-
-  /* ==========================================================
-     SUPER ADMIN — MONITORING AND SECURITY
-     ========================================================== */
-
-  function presenceLabel(lastSeen) {
-    if (!lastSeen) return 'No heartbeat recorded';
-
-    const age =
-      Date.now() - new Date(lastSeen).getTime();
-
-    return age <= 5 * 60 * 1000
-      ? 'Recently active'
-      : 'Away';
-  }
-
-  const selectedActivityIds = new Set();
-
-  /* ==========================================================
-     SUPER ADMIN — LOGIN HISTORY MANAGEMENT
-     ========================================================== */
-
-  function ensureLoginHistoryControls() {
-    if (!isSuperAdmin) return;
-
-    const tableBody = $('admin-login-table');
-    const table = tableBody?.closest('table');
-    if (!table || $('login-history-controls')) return;
-
-    const toolbar = document.createElement('div');
-    toolbar.id = 'login-history-controls';
-    toolbar.className = 'activity-log-controls';
-    toolbar.innerHTML = `
-      <div class="activity-log-toolbar">
-        <label>
-          <input type="checkbox" id="select-visible-login">
-          Select visible
-        </label>
-        <button type="button" class="button" id="delete-selected-login" disabled>
-          Delete selected (<span id="selected-login-count">0</span>)
-        </button>
-        <button type="button" class="button button-danger" id="clear-all-login" disabled>
-          Clear all login history
-        </button>
-      </div>
-      <p id="login-clear-status" role="status" aria-live="polite"></p>
-    `;
-    table.parentElement.insertBefore(toolbar, table);
-
-    const headerRow = table.querySelector('thead tr');
-    if (headerRow && !headerRow.querySelector('[data-login-select-heading]')) {
-      const heading = document.createElement('th');
-      heading.textContent = 'Select';
-      heading.dataset.loginSelectHeading = 'true';
-      headerRow.insertBefore(heading, headerRow.firstElementChild);
+    .intro-animated-text {
+        padding: 0 18px;
+        gap: 10px;
     }
 
-    tableBody.addEventListener('change', event => {
-      const checkbox = event.target.closest('[data-login-select]');
-      if (!checkbox) return;
-      const id = String(checkbox.dataset.loginSelect);
-      if (checkbox.checked) selectedLoginIds.add(id);
-      else selectedLoginIds.delete(id);
-      renderLoginHistory();
-    });
-
-    $('select-visible-login')?.addEventListener('change', event => {
-      if (!isSuperAdmin) return;
-      monitoringLoginHistory.forEach(item => {
-        const id = String(item.id);
-        if (event.target.checked) selectedLoginIds.add(id);
-        else selectedLoginIds.delete(id);
-      });
-      renderLoginHistory();
-    });
-
-    $('delete-selected-login')?.addEventListener('click', () => {
-      clearLoginHistory([...selectedLoginIds], false);
-    });
-
-    $('clear-all-login')?.addEventListener('click', () => {
-      clearLoginHistory([], true);
-    });
-  }
-
-  function renderLoginHistory() {
-    const table = $('admin-login-table');
-    if (!table) return;
-
-    const availableIds = new Set(
-      monitoringLoginHistory.map(item => String(item.id))
-    );
-    [...selectedLoginIds].forEach(id => {
-      if (!availableIds.has(id)) selectedLoginIds.delete(id);
-    });
-
-    table.innerHTML = monitoringLoginHistory.length
-      ? monitoringLoginHistory.map(item => {
-          const admin = monitoringAdmins.find(a => a.user_id === item.user_id);
-          const id = String(item.id);
-          return `
-            <tr>
-              <td>
-                <input type="checkbox" data-login-select="${esc(id)}"
-                  ${selectedLoginIds.has(id) ? 'checked' : ''}
-                  aria-label="Select login history record">
-              </td>
-              <td>${esc(admin?.email || item.user_id || 'Unknown user')}</td>
-              <td>${esc(item.event_type)}</td>
-              <td>${esc(fmtDateTime(item.created_at))}</td>
-            </tr>
-          `;
-        }).join('')
-      : '<tr><td colspan="4" class="empty-cell">No login history recorded yet.</td></tr>';
-
-    const selectAll = $('select-visible-login');
-    if (selectAll) {
-      selectAll.checked = monitoringLoginHistory.length > 0 &&
-        monitoringLoginHistory.every(item => selectedLoginIds.has(String(item.id)));
-      selectAll.indeterminate = monitoringLoginHistory.some(item =>
-        selectedLoginIds.has(String(item.id))) && !selectAll.checked;
+    .intro-cacsf {
+        font-size: clamp(43px, 10vw, 68px) !important;
     }
 
-    const selectedButton = $('delete-selected-login');
-    if (selectedButton) selectedButton.disabled = selectedLoginIds.size === 0;
-    const clearAllButton = $('clear-all-login');
-    if (clearAllButton) clearAllButton.disabled = monitoringLoginHistory.length === 0;
-    const count = $('selected-login-count');
-    if (count) count.textContent = selectedLoginIds.size;
-  }
-
-  async function clearLoginHistory(ids, clearAll) {
-    if (!isSuperAdmin) {
-      say('login-clear-status', 'Only a Super Admin can delete login history.', 'error');
-      return;
-    }
-    if (!clearAll && (!ids || ids.length === 0)) {
-      say('login-clear-status', 'Select at least one login record.', 'error');
-      return;
+    .intro-line-one {
+        font-size: clamp(23px, 5vw, 36px) !important;
     }
 
-    const confirmed = window.confirm(clearAll
-      ? 'PERMANENTLY DELETE ALL LOGIN HISTORY? This cannot be undone.'
-      : `PERMANENTLY DELETE ${ids.length} SELECTED LOGIN RECORD(S)? This cannot be undone.`);
-    if (!confirmed) return;
-
-    const button = clearAll ? $('clear-all-login') : $('delete-selected-login');
-    setBusy(button, true, 'Deleting…');
-
-    try {
-      const { data: stillSuperAdmin, error: roleError } =
-        await client.rpc('is_cacsf_super_admin');
-      if (roleError) throw roleError;
-      if (stillSuperAdmin !== true) {
-        throw new Error('Your Super Admin permission is no longer active.');
-      }
-
-      const { data, error } = await client.rpc('clear_cacsf_admin_login_history', {
-        p_login_ids: clearAll ? null : ids,
-        p_clear_all: Boolean(clearAll)
-      });
-      if (error) throw error;
-
-      selectedLoginIds.clear();
-      say('login-clear-status',
-        `${Number(data || 0)} login history record(s) deleted successfully.`,
-        'success');
-      await loadMonitoring();
-    } catch (error) {
-      console.error('Login history deletion failed:', error);
-      say('login-clear-status', error.message || 'Login history could not be deleted.', 'error');
-    } finally {
-      setBusy(button, false);
+    .intro-line-two {
+        font-size: clamp(19px, 4vw, 28px) !important;
     }
-  }
+}
 
-  function isProtectedAuditEvent(eventType) {
-    return /admin_(invited|suspended|reactivated|role_changed|access_removed)|admin_login|admin_logout|login|logout|security|activity_logs_cleared/i.test(String(eventType || ''));
-  }
+/* MOBILE PHONES */
 
-  function renderActivityLog() {
-    const adminFilter = $('activity-admin-filter')?.value || '';
-    const typeFilter = $('activity-type-filter')?.value || '';
-    const fromValue = $('activity-from-filter')?.value || '';
-    const toValue = $('activity-to-filter')?.value || '';
-    const from = fromValue ? new Date(`${fromValue}T00:00:00`) : null;
-    const to = toValue ? new Date(`${toValue}T23:59:59.999`) : null;
-
-    const rows = monitoringActivity.filter(item => {
-      const created = new Date(item.created_at);
-      return (!adminFilter || item.actor_id === adminFilter) &&
-        (!typeFilter || item.event_type === typeFilter) &&
-        (!from || created >= from) && (!to || created <= to);
-    });
-
-    const table = $('admin-activity-table');
-    if (!table) return;
-    table.innerHTML = rows.length ? rows.map(item => {
-      const admin = monitoringAdmins.find(a => a.user_id === item.actor_id);
-      const protectedEvent = isProtectedAuditEvent(item.event_type);
-      const details = item.details && typeof item.details === 'object'
-        ? JSON.stringify(item.details) : '';
-      const checked = selectedActivityIds.has(String(item.id));
-      return `
-        <tr class="${protectedEvent ? 'security-event activity-protected' : ''}">
-          <td>${protectedEvent ? '<span title="Protected security audit record">🔒</span>' :
-            `<input type="checkbox" data-activity-select="${esc(item.id)}" ${checked ? 'checked' : ''} aria-label="Select activity record">`}</td>
-          <td>${esc(admin?.email || item.actor_id || 'System / public action')}</td>
-          <td>${esc(item.event_type)}</td>
-          <td>${esc([item.entity_type, item.entity_id].filter(Boolean).join(' · ') || '—')}<small>${esc(details)}</small></td>
-          <td>${esc(fmtDateTime(item.created_at))}</td>
-        </tr>`;
-    }).join('') : '<tr><td colspan="5" class="empty-cell">No activity matches these filters.</td></tr>';
-
-    const selectable = rows.filter(item => !isProtectedAuditEvent(item.event_type));
-    const selectAll = $('select-visible-activity');
-    if (selectAll) {
-      selectAll.checked = selectable.length > 0 && selectable.every(x => selectedActivityIds.has(String(x.id)));
-      selectAll.indeterminate = selectable.some(x => selectedActivityIds.has(String(x.id))) && !selectAll.checked;
-    }
-    const selectedVisible = selectable.filter(x => selectedActivityIds.has(String(x.id))).length;
-    if ($('clear-selected-activity')) $('clear-selected-activity').disabled = selectedVisible === 0;
-    if ($('clear-all-activity')) $('clear-all-activity').disabled = monitoringActivity.every(x => isProtectedAuditEvent(x.event_type));
-  }
-
-  async function clearActivityLogs(ids, clearAll) {
-    if (!isSuperAdmin) {
-      say('activity-clear-status', 'Only a Super Admin can clear activity logs.', 'error');
-      return;
-    }
-    const prompt = clearAll
-      ? 'Clear all routine administrator activity logs? Protected login and security audit records will be retained.'
-      : `Clear ${ids.length} selected routine activity record(s)? Protected login and security audit records cannot be deleted.`;
-    if (!window.confirm(prompt)) return;
-
-    const button = clearAll ? $('clear-all-activity') : $('clear-selected-activity');
-    setBusy(button, true, 'Clearing…');
-    try {
-      const { data, error } = await client.rpc('clear_cacsf_admin_activity', {
-        p_activity_ids: clearAll ? null : ids,
-        p_clear_all: Boolean(clearAll)
-      });
-      if (error) throw error;
-      selectedActivityIds.clear();
-      say('activity-clear-status',
-        `${Number(data || 0)} routine activity record(s) cleared. Protected security records were retained.`,
-        'success');
-      await loadMonitoring();
-    } catch (error) {
-      console.error('Activity log clearing failed:', error);
-      say('activity-clear-status', error.message || 'Activity logs could not be cleared.', 'error');
-    } finally {
-      setBusy(button, false);
-      if (button) button.textContent = clearAll ? 'Clear all routine activity' : 'Clear selected';
-    }
-  }
-
-  $('admin-activity-table')?.addEventListener('change', event => {
-    const checkbox = event.target.closest('[data-activity-select]');
-    if (!checkbox) return;
-    const id = String(checkbox.dataset.activitySelect);
-    if (checkbox.checked) selectedActivityIds.add(id);
-    else selectedActivityIds.delete(id);
-    renderActivityLog();
-  });
-
-  $('select-visible-activity')?.addEventListener('change', event => {
-    if (!isSuperAdmin) return;
-    const adminFilter = $('activity-admin-filter')?.value || '';
-    const typeFilter = $('activity-type-filter')?.value || '';
-    const fromValue = $('activity-from-filter')?.value || '';
-    const toValue = $('activity-to-filter')?.value || '';
-    const from = fromValue ? new Date(`${fromValue}T00:00:00`) : null;
-    const to = toValue ? new Date(`${toValue}T23:59:59.999`) : null;
-    monitoringActivity.filter(item => {
-      const d = new Date(item.created_at);
-      return !isProtectedAuditEvent(item.event_type) &&
-        (!adminFilter || item.actor_id === adminFilter) &&
-        (!typeFilter || item.event_type === typeFilter) &&
-        (!from || d >= from) && (!to || d <= to);
-    }).forEach(item => {
-      const id = String(item.id);
-      if (event.target.checked) selectedActivityIds.add(id);
-      else selectedActivityIds.delete(id);
-    });
-    renderActivityLog();
-  });
-
-  ['activity-admin-filter','activity-type-filter','activity-from-filter','activity-to-filter']
-    .forEach(id => $(id)?.addEventListener('change', renderActivityLog));
-
-  $('activity-filter-reset')?.addEventListener('click', () => {
-    ['activity-admin-filter','activity-type-filter','activity-from-filter','activity-to-filter']
-      .forEach(id => { if ($(id)) $(id).value = ''; });
-    renderActivityLog();
-  });
-  $('clear-selected-activity')?.addEventListener('click', () => {
-    const ids = [...selectedActivityIds];
-    clearActivityLogs(ids, false);
-  });
-  $('clear-all-activity')?.addEventListener('click', () => clearActivityLogs([], true));
-
-  async function loadMonitoring() {
-    if (!isSuperAdmin) return;
-
-    const tableIds = [
-      'admin-presence-table',
-      'admin-login-table',
-      'admin-activity-table'
-    ];
-
-    tableIds.forEach(id => {
-      if (has(id)) {
-        $(id).innerHTML =
-          '<tr><td colspan="5" class="empty-cell">Loading…</td></tr>';
-      }
-    });
-
-    try {
-      const [
-        adminsRes,
-        presenceRes,
-        loginRes,
-        activityRes
-      ] = await Promise.all([
-        client
-          .from('admin_users')
-          .select(
-            'user_id,email,role,is_active,status,invitation_accepted_at'
-          ),
-
-        client
-          .from('admin_presence')
-          .select('user_id,last_seen_at')
-          .order('last_seen_at', { ascending: false })
-          .limit(100),
-
-        client
-          .from('admin_login_history')
-          .select('id,user_id,event_type,created_at')
-          .order('created_at', { ascending: false })
-          .limit(100),
-
-        client
-          .from('admin_activity')
-          .select(
-            'id,actor_id,event_type,entity_type,entity_id,details,created_at'
-          )
-          .order('created_at', { ascending: false })
-          .limit(150)
-      ]);
-
-      for (const result of [
-        adminsRes,
-        presenceRes,
-        loginRes,
-        activityRes
-      ]) {
-        if (result.error) throw result.error;
-      }
-
-      const admins = adminsRes.data || [];
-
-      const byId = new Map(
-        admins.map(a => [a.user_id, a])
-      );
-
-      const presence = presenceRes.data || [];
-      const logins = loginRes.data || [];
-      const activity = activityRes.data || [];
-      monitoringLoginHistory = logins;
-      monitoringActivity = activity;
-      monitoringAdmins = admins;
-      ensureLoginHistoryControls();
-
-      const adminSelect = $('activity-admin-filter');
-      if (adminSelect) {
-        const current = adminSelect.value;
-        adminSelect.innerHTML = '<option value="">All administrators</option>' +
-          admins.map(a => `<option value="${esc(a.user_id)}">${esc(a.email || a.user_id)}</option>`).join('');
-        adminSelect.value = current;
-      }
-      const typeSelect = $('activity-type-filter');
-      if (typeSelect) {
-        const current = typeSelect.value;
-        const types = [...new Set(activity.map(x => x.event_type).filter(Boolean))].sort();
-        typeSelect.innerHTML = '<option value="">All activity types</option>' +
-          types.map(type => `<option value="${esc(type)}">${esc(type)}</option>`).join('');
-        typeSelect.value = current;
-      }
-
-      const activeCount =
-        admins.filter(a =>
-          getAdminStatus(a) === 'active' &&
-          a.is_active === true
-        ).length;
-
-      const recentCount =
-        presence.filter(p => {
-          const admin = byId.get(p.user_id);
-
-          return (
-            admin &&
-            getAdminStatus(admin) === 'active' &&
-            admin.is_active === true &&
-            Date.now() -
-              new Date(p.last_seen_at).getTime()
-              <= 5 * 60 * 1000
-          );
-        }).length;
-
-      if (has('monitor-admin-count')) {
-        $('monitor-admin-count').textContent =
-          activeCount;
-      }
-
-      if (has('monitor-online-count')) {
-        $('monitor-online-count').textContent =
-          recentCount;
-      }
-
-      if (has('monitor-login-count')) {
-        $('monitor-login-count').textContent =
-          logins.filter(x => x.event_type === 'login').length;
-      }
-
-      if (has('monitor-activity-count')) {
-        $('monitor-activity-count').textContent =
-          activity.length;
-      }
-
-      if (has('admin-presence-table')) {
-        $('admin-presence-table').innerHTML =
-          presence.length
-            ? presence.map(p => {
-                const a = byId.get(p.user_id);
-
-                return `
-                  <tr>
-                    <td>${esc(a?.email || p.user_id)}</td>
-                    <td>${esc(a ? adminRoleLabel(a.role) : 'Former / unavailable admin')}</td>
-                    <td>${esc(presenceLabel(p.last_seen_at))}</td>
-                    <td>${esc(fmtDateTime(p.last_seen_at))}</td>
-                  </tr>
-                `;
-              }).join('')
-            : `
-              <tr>
-                <td colspan="4" class="empty-cell">
-                  No administrator heartbeat records yet.
-                </td>
-              </tr>
-            `;
-      }
-
-      if (has('admin-login-table')) {
-        renderLoginHistory();
-      }
-
-      renderActivityLog();
-
-    } catch (error) {
-      console.error('Monitoring load failed:', error);
-
-      tableIds.forEach(id => {
-        if (has(id)) {
-          $(id).innerHTML = `
-            <tr>
-              <td colspan="5" class="empty-cell">
-                Could not load monitoring data: ${esc(error.message)}
-              </td>
-            </tr>
-          `;
-        }
-      });
-    }
-  }
-
-  $('refresh-monitoring')?.addEventListener(
-    'click',
-    loadMonitoring
-  );
-
-  /* ==========================================================
-     OVERVIEW
-     ========================================================== */
-
-  let dashboardRecentType = null;
-
-  function renderDashboardRecent(type) {
-    dashboardRecentType = type;
-    const body = $('recent-table');
-    const title = document.querySelector('#page-overview .recent-panel .panel-heading h2');
-    const subtitle = document.querySelector('#page-overview .recent-panel .panel-heading p');
-    const head = document.querySelector('#page-overview .recent-panel thead');
-    const viewAll = document.querySelector('#page-overview .recent-panel .text-link');
-    if (!body || !head) return;
-
-    const configs = {
-      birthdays: { title:'Recent birthday registrations', subtitle:'Newest alumni birthday registrations.', columns:['Name','Email','Graduation','Registered'], rows:alumni.slice().sort(dateSort).slice(0,8), route:'directory' },
-      weddings: { title:'Recent wedding registrations', subtitle:'Newest wedding anniversary registrations.', columns:['Couples','Wedding date','Email','Registered'], rows:weddings.slice().sort(dateSort).slice(0,8), route:'wedding-directory' },
-      media: { title:'Recent reunion media', subtitle:'Latest uploaded reunion media items.', columns:['Media','Category','Year','Added'], rows:media.slice().sort(dateSort).slice(0,8), route:'media' },
-      projects: { title:'Recent project gallery updates', subtitle:'Latest published project gallery items.', columns:['Project','Category','Year','Added'], rows:projects.slice().sort(dateSort).slice(0,8), route:'projects' },
-      messages: { title:'Recent contact messages', subtitle:'Latest messages received from the website.', columns:['Sender','Email','Subject','Received'], rows:messages.slice().sort(dateSort).slice(0,8), route:'messages' }
-    };
-    const cfg = configs[type];
-    if (!cfg) {
-      if (title) title.textContent = 'Recent registrations';
-      if (subtitle) subtitle.textContent = 'Select a dashboard card to view its latest records.';
-      head.innerHTML = '<tr><th>Latest records</th></tr>';
-      body.innerHTML = '<tr><td class="empty-cell" colspan="1">Select a dashboard card to view recent records.</td></tr>';
-      if (viewAll) viewAll.hidden = true;
-      document.querySelectorAll('#page-overview .stat-card[data-dashboard-type]').forEach(c=>c.classList.remove('selected'));
-      return;
-    }
-    if (title) title.textContent = cfg.title;
-    if (subtitle) subtitle.textContent = cfg.subtitle;
-    head.innerHTML = `<tr>${cfg.columns.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>`;
-    if (viewAll) { viewAll.hidden = false; viewAll.href = `#${cfg.route}`; viewAll.textContent = 'View all →'; }
-    const rows = cfg.rows;
-    if (!rows.length) {
-      const empty = type === 'birthdays' ? 'No recent registrations.' : type === 'weddings' ? 'No recent wedding registrations.' : 'No data available.';
-      body.innerHTML = `<tr><td class="empty-cell" colspan="${cfg.columns.length}">${empty}</td></tr>`;
-    } else {
-      body.innerHTML = rows.map(r => {
-        let cells;
-        if (type === 'birthdays') cells=[fullName(r),r.email||'—',r.graduation_year||'—',fmtDate(r.created_at)];
-        else if (type === 'weddings') cells=[r.couple_name||'Unnamed couple',fmtDate(r.wedding_date),r.email||'—',fmtDate(r.created_at)];
-        else if (type === 'media') cells=[r.caption||(r.category==='videos'?'Reunion video':'CACSF media'),r.category||'—',r.year||'—',fmtDate(r.created_at)];
-        else if (type === 'projects') cells=[r.caption||'Project update',r.category||'—',r.year||'—',fmtDate(r.created_at)];
-        else cells=[r.name||'—',r.email||'—',r.subject||'—',fmtDate(r.created_at)];
-        return `<tr>${cells.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`;
-      }).join('');
-    }
-    document.querySelectorAll('#page-overview .stat-card[data-dashboard-type]').forEach(c=>c.classList.toggle('selected',c.dataset.dashboardType===type));
-  }
-
-  function renderOverview() {
-    $('alumni-count').textContent = alumni.length;
-    if (has('main-wedding-count')) $('main-wedding-count').textContent = weddings.length;
-    $('media-count').textContent = media.length;
-    $('project-count').textContent = projects.length;
-    $('message-count').textContent = messages.length;
-    if (has('wedding-count-stat')) $('wedding-count-stat').textContent = weddings.length;
-    renderDashboardRecent(dashboardRecentType);
-
-    const now = new Date();
-    const months = [];
-    for (let offset=5; offset>=0; offset--) {
-      const d = new Date(now.getFullYear(), now.getMonth()-offset, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      const birthdayCount = alumni.filter(r=>monthKey(r.created_at)===key).length;
-      const weddingCount = weddings.filter(r=>monthKey(r.created_at)===key).length;
-      months.push({label:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}),birthdayCount,weddingCount});
-    }
-    const host=$('overview-months');
-    if (host) host.innerHTML = `<div class="snapshot-legend"><span><i class="snapshot-dot birthday"></i> Birthday</span><span><i class="snapshot-dot wedding"></i> Wedding</span></div>` + months.map(m=>`<div class="snapshot-month"><div class="snapshot-month-label">${esc(m.label)}</div><div class="snapshot-track"><span class="snapshot-bar birthday" style="width:${m.birthdayCount?Math.max(5,Math.min(100,m.birthdayCount/Math.max(1,...months.map(x=>x.birthdayCount))*100)):0}%"></span></div><b>${m.birthdayCount}</b><div class="snapshot-track"><span class="snapshot-bar wedding" style="width:${m.weddingCount?Math.max(5,Math.min(100,m.weddingCount/Math.max(1,...months.map(x=>x.weddingCount))*100)):0}%"></span></div><b>${m.weddingCount}</b></div>`).join('') + (months.every(m=>!m.birthdayCount&&!m.weddingCount)?'<div class="empty-cell">No registration activity available.</div>':'');
-  }
-
-  document.querySelectorAll('#page-overview .stat-card').forEach(card=>{
-    const labels=[...card.querySelectorAll('span')].map(x=>x.textContent.toLowerCase()).join(' ');
-    const type=card.id==='alumni-count'?'birthdays':card.querySelector('#alumni-count')?'birthdays':card.querySelector('#main-wedding-count')?'weddings':labels.includes('wedding')?'weddings':labels.includes('media')?'media':labels.includes('project')?'projects':labels.includes('contact')?'messages':null;
-    if(type){card.dataset.dashboardType=type;card.setAttribute('role','button');card.setAttribute('tabindex','0');}
-  });
-  document.querySelector('#page-overview')?.addEventListener('click',e=>{
-    const card=e.target.closest('.stat-card[data-dashboard-type]');
-    if(card) renderDashboardRecent(card.dataset.dashboardType);
-  });
-  document.querySelector('#page-overview')?.addEventListener('keydown',e=>{
-    if((e.key==='Enter'||e.key===' ')&&e.target.matches('.stat-card[data-dashboard-type]')){e.preventDefault();renderDashboardRecent(e.target.dataset.dashboardType);}
-  });
-
-  /* ==========================================================
-     ALUMNI DIRECTORY
-     ========================================================== */
-
-  function renderDirectory() {
-    const q = (
-      $('alumni-search')?.value || ''
-    ).trim().toLowerCase();
-
-    const rows = alumni.filter(r =>
-      [
-        fullName(r),
-        r.email,
-        r.phone,
-        r.graduation_year
-      ].join(' ').toLowerCase().includes(q)
-    );
-
-    const availableIds = new Set(alumni.map(r => String(r.id)));
-    [...selectedAlumniIds].forEach(id => {
-      if (!availableIds.has(String(id))) selectedAlumniIds.delete(id);
-    });
-
-    $('directory-count').textContent =
-      `${rows.length} of ${alumni.length} alumni`;
-
-    const selectAll = $('select-visible-alumni');
-    if (selectAll) {
-      selectAll.hidden = false;
-      selectAll.checked = rows.length > 0 &&
-        rows.every(r => selectedAlumniIds.has(String(r.id)));
-      selectAll.indeterminate = rows.some(r =>
-        selectedAlumniIds.has(String(r.id))
-      ) && !selectAll.checked;
+@media (max-width: 560px) {
+    .logo-intro-inner {
+        gap: 17px !important;
+        width: 100%;
     }
 
-    const bulkButton = $('delete-selected-alumni');
-    if (bulkButton) {
-      bulkButton.hidden = !isSuperAdmin;
-      bulkButton.disabled = selectedAlumniIds.size === 0;
-    }
-    const selectedCount = $('selected-alumni-count');
-    if (selectedCount) selectedCount.textContent = selectedAlumniIds.size;
-
-    $('alumni-table').innerHTML = rows.length
-      ? rows.map(r => `
-          <tr>
-            <td class="bulk-select-cell">
-              <input type="checkbox" data-select-alumnus="${esc(r.id)}" aria-label="Select ${esc(fullName(r))}" ${selectedAlumniIds.has(String(r.id)) ? 'checked' : ''}>
-            </td>
-            <td>${esc(fullName(r))}</td>
-            <td>${esc(r.email || '—')}</td>
-            <td>${esc(r.phone || '—')}</td>
-            <td>${esc(r.graduation_year || '—')}</td>
-            <td>${esc(
-              [r.birth_month, r.birth_day]
-                .filter(Boolean).join(' ') || '—'
-            )}</td>
-            <td>${esc(fmtDate(r.created_at))}</td>
-            <td>
-              <button
-                class="action-link"
-                type="button"
-                data-view-alumnus="${esc(r.id)}"
-              >View</button>
-
-              ${isSuperAdmin ? `
-                <button
-                  class="action-link"
-                  type="button"
-                  data-edit-alumnus="${esc(r.id)}"
-                >Edit</button>
-
-                <button
-                  class="action-link"
-                  type="button"
-                  data-delete-alumnus="${esc(r.id)}"
-                >Delete</button>
-              ` : ''}
-            </td>
-          </tr>
-        `).join('')
-      : `
-          <tr>
-            <td colspan="8" class="empty-cell">
-              No matching alumni records.
-            </td>
-          </tr>
-        `;
-  }
-
-  async function deleteSelectedAlumni(button) {
-    if (!isSuperAdmin) {
-      alert('Only a Super Admin can delete alumni records.');
-      return;
+    .logo-intro img {
+        width: min(76vw, 290px);
+        max-height: 34vh;
     }
 
-    const selectedRecords = alumni.filter(r =>
-      selectedAlumniIds.has(String(r.id))
-    );
-
-    if (!selectedRecords.length) {
-      alert('Select at least one alumni record first.');
-      return;
+    .intro-animated-text {
+        width: 100%;
+        padding: 0 15px;
+        gap: 9px;
     }
 
-    const names = selectedRecords
-      .slice(0, 8)
-      .map(r => `• ${fullName(r)}`)
-      .join('\n');
-    const extra = selectedRecords.length > 8
-      ? `\n…and ${selectedRecords.length - 8} more`
-      : '';
-
-    const confirmed = window.confirm(
-      `PERMANENTLY DELETE ${selectedRecords.length} ALUMNI RECORD(S)?\n\n` +
-      `${names}${extra}\n\n` +
-      `Each selected registration record will be permanently deleted. ` +
-      `Its profile photograph will also be removed from CACSF storage, if one exists.\n\n` +
-      `This action cannot be undone.\n\nDo you want to continue?`
-    );
-
-    if (!confirmed) return;
-
-    setBusy(button, true, 'Deleting…');
-    const deletedIds = [];
-    const failures = [];
-
-    try {
-      const {
-        data: stillSuperAdmin,
-        error: roleError
-      } = await client.rpc('is_cacsf_super_admin');
-
-      if (roleError) {
-        throw new Error(
-          `Could not verify Super Admin permission: ${roleError.message}`
-        );
-      }
-      if (stillSuperAdmin !== true) {
-        throw new Error(
-          'Your Super Admin permission is no longer active. No alumni records were deleted.'
-        );
-      }
-
-      // Use the same per-record Supabase deletion and storage cleanup
-      // approach as the existing individual-delete feature.
-      for (const record of selectedRecords) {
-        const id = record.id;
-        try {
-          const { data: deletedRows, error: deleteError } = await client
-            .from('alumni')
-            .delete()
-            .eq('id', id)
-            .select('id');
-
-          if (deleteError) throw deleteError;
-          if (!deletedRows || deletedRows.length === 0) {
-            throw new Error('Supabase did not confirm deletion of this record.');
-          }
-
-          if (record.photo_path) {
-            await storageRemove(record.photo_path);
-          }
-
-          await audit(
-            'alumnus_record_deleted',
-            'alumni',
-            id,
-            {
-              name: fullName(record),
-              email: record.email || null,
-              photo_path: record.photo_path || null,
-              bulk_delete: true
-            }
-          );
-
-          deletedIds.push(String(id));
-        } catch (error) {
-          failures.push(`${fullName(record)}: ${error.message}`);
-        }
-      }
-
-      if (deletedIds.length) {
-        alumni = alumni.filter(
-          r => !deletedIds.includes(String(r.id))
-        );
-      }
-      selectedAlumniIds.clear();
-      renderAll();
-
-      if (failures.length) {
-        alert(
-          `${deletedIds.length} record(s) deleted successfully.\n` +
-          `${failures.length} record(s) could not be deleted:\n\n` +
-          failures.join('\n')
-        );
-      } else {
-        alert(
-          `${deletedIds.length} selected alumni record(s) have been successfully deleted.`
-        );
-      }
-    } catch (error) {
-      console.error('Bulk alumni deletion failed:', error);
-      alert(`Could not complete bulk deletion:\n\n${error.message}`);
-    } finally {
-      setBusy(button, false);
-      renderDirectory();
-    }
-  }
-
-  function renderBirthdays() {
-    const q = (
-      $('birthday-search')?.value || ''
-    ).trim().toLowerCase();
-
-    const rows = alumni.filter(r =>
-      r.birth_month &&
-      r.birth_day &&
-      [
-        fullName(r),
-        r.birth_month,
-        r.birth_day,
-        r.email,
-        r.phone,
-        r.graduation_year
-      ].join(' ').toLowerCase().includes(q)
-    );
-
-    $('birthday-count').textContent =
-      `${rows.length} birthday records`;
-
-    $('birthday-table').innerHTML = rows.length
-      ? [...rows]
-          .sort((a, b) =>
-            monthNumber(a.birth_month) -
-              monthNumber(b.birth_month) ||
-            Number(a.birth_day) - Number(b.birth_day)
-          )
-          .map(r => `
-            <tr>
-              <td>${esc(fullName(r))}</td>
-              <td>${esc(r.birth_month)} ${esc(r.birth_day)}</td>
-              <td>${esc(r.email || '—')}</td>
-              <td>${esc(r.phone || '—')}</td>
-              <td>${esc(r.graduation_year || '—')}</td>
-            </tr>
-          `).join('')
-      : `
-          <tr>
-            <td colspan="5" class="empty-cell">
-              No matching birthday details found.
-            </td>
-          </tr>
-        `;
-  }
-
-  function monthNumber(name) {
-    const d = new Date(`${name} 1, 2000`);
-
-    return Number.isNaN(d.getTime())
-      ? 13
-      : d.getMonth() + 1;
-  }
-
-  $('alumni-search')?.addEventListener(
-    'input',
-    renderDirectory
-  );
-
-  $('select-visible-alumni')?.addEventListener('change', event => {
-    const q = ($('alumni-search')?.value || '').trim().toLowerCase();
-    const visibleRows = alumni.filter(r =>
-      [
-        fullName(r),
-        r.email,
-        r.phone,
-        r.graduation_year
-      ].join(' ').toLowerCase().includes(q)
-    );
-
-    visibleRows.forEach(record => {
-      const id = String(record.id);
-      if (event.target.checked) selectedAlumniIds.add(id);
-      else selectedAlumniIds.delete(id);
-    });
-    renderDirectory();
-  });
-
-  $('alumni-table')?.addEventListener('change', event => {
-    const checkbox = event.target.closest('[data-select-alumnus]');
-    if (!checkbox) return;
-
-    const id = String(checkbox.dataset.selectAlumnus);
-    if (checkbox.checked) selectedAlumniIds.add(id);
-    else selectedAlumniIds.delete(id);
-    renderDirectory();
-  });
-
-  $('delete-selected-alumni')?.addEventListener('click', event => {
-    deleteSelectedAlumni(event.currentTarget);
-  });
-
-  $('birthday-search')?.addEventListener(
-    'input',
-    renderBirthdays
-  );
-
-  /* ==========================================================
-     MONTHLY REGISTRATION REPORTS
-     ========================================================== */
-
-  const birthdayMonths = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-  ];
-
-  const birthdayMonthValue = value => {
-    const found = birthdayMonths.find(m =>
-      String(value || '').trim().toLowerCase() === m.toLowerCase()
-    );
-    return found || '';
-  };
-
-  function initMonthYear() {
-    $('year-heading').textContent = '12 birthday-month folders';
-  }
-
-  function renderMonthGrid() {
-    $('year-heading').textContent = '12 birthday-month folders';
-    const counts = birthdayMonths.map(month =>
-      alumni.filter(r => birthdayMonthValue(r.birth_month) === month).length
-    );
-
-    $('month-grid').innerHTML = counts.map((count, i) => {
-      const month = birthdayMonths[i];
-      return `
-        <button type="button"
-          class="month-card${selectedMonth === month ? ' selected' : ''}"
-          data-month="${month}">
-          <span>${month}</span>
-          <b>${count}</b>
-          <small>${count === 1 ? 'alumnus / alumna' : 'alumni'}</small>
-        </button>
-      `;
-    }).join('');
-
-    document.querySelectorAll('#month-grid [data-month]').forEach(btn => {
-      btn.addEventListener('click', () => selectMonth(btn.dataset.month));
-    });
-  }
-
-  function selectMonth(month) {
-    selectedMonth = birthdayMonthValue(month);
-    renderMonthGrid();
-
-    const rows = alumni
-      .filter(r => birthdayMonthValue(r.birth_month) === selectedMonth)
-      .sort((a, b) =>
-        Number(a.birth_day || 0) - Number(b.birth_day || 0) ||
-        fullName(a).localeCompare(fullName(b))
-      );
-
-    $('month-detail-panel').hidden = false;
-    $('month-detail-title').textContent = `${selectedMonth} Birthdays`;
-    $('month-detail-note').textContent =
-      `${rows.length} ${rows.length === 1 ? 'alumnus has' : 'alumni have'} a birthday in ${selectedMonth}. Registration dates remain recorded separately.`;
-
-    const withPhotos = rows.filter(r => r.photo_path);
-    $('month-metrics').innerHTML = `
-      <div class="metric"><b>${rows.length}</b> Birthday records</div>
-      <div class="metric"><b>${withPhotos.length}</b> Profile photos</div>
-      <div class="metric"><b>${rows.length - withPhotos.length}</b> Without photos</div>
-    `;
-
-    $('month-table').innerHTML = rows.length ? rows.map(r => `
-      <tr>
-        <td><input type="checkbox" data-select-alumnus="${esc(r.id)}" ${selectedAlumniIds.has(String(r.id)) ? 'checked' : ''} aria-label="Select ${esc(fullName(r))}"></td>
-        <td>${esc(fullName(r))}<small>${esc(selectedMonth)} ${esc(r.birth_day || '')}</small></td>
-        <td>${esc(r.email || '—')}</td>
-        <td>${esc(r.phone || '—')}</td>
-        <td>${esc(r.graduation_year || '—')}</td>
-        <td>${esc(fmtDate(r.created_at))}</td>
-        <td>
-          <button class="action-link" type="button" data-view-alumnus="${esc(r.id)}">View</button>
-          ${isSuperAdmin ? `
-            <button class="action-link" type="button" data-edit-alumnus="${esc(r.id)}">Edit</button>
-            <button class="action-link" type="button" data-delete-alumnus="${esc(r.id)}">Delete</button>
-          ` : ''}
-        </td>
-      </tr>
-    `).join('') : `
-      <tr><td colspan="7" class="empty-cell">No alumni birthdays in ${esc(selectedMonth)}.</td></tr>
-    `;
-    const monthSelectAll = $('select-visible-month-alumni');
-    if (monthSelectAll) {
-      monthSelectAll.hidden = false;
-      monthSelectAll.checked = rows.length > 0 &&
-        rows.every(r => selectedAlumniIds.has(String(r.id)));
-    }
-  }
-
-  function monthRows() {
-    return selectedMonth
-      ? alumni.filter(r => birthdayMonthValue(r.birth_month) === selectedMonth)
-          .sort((a, b) => Number(a.birth_day || 0) - Number(b.birth_day || 0))
-      : [];
-  }
-
-
-  $('select-visible-month-alumni')?.addEventListener('change', event => {
-    monthRows().forEach(record => {
-      const id = String(record.id);
-      if (event.target.checked) selectedAlumniIds.add(id);
-      else selectedAlumniIds.delete(id);
-    });
-    selectMonth(selectedMonth);
-  });
-
-  $('month-table')?.addEventListener('change', event => {
-    const checkbox = event.target.closest('[data-select-alumnus]');
-    if (!checkbox) return;
-    const id = String(checkbox.dataset.selectAlumnus);
-    if (checkbox.checked) selectedAlumniIds.add(id);
-    else selectedAlumniIds.delete(id);
-    selectMonth(selectedMonth);
-  });
-
-  $('download-month-xlsx')?.addEventListener(
-    'click',
-    downloadMonthExcel
-  );
-
-  $('download-month-photos')?.addEventListener(
-    'click',
-    downloadMonthPhotos
-  );
-
-  function downloadMonthExcel() {
-    const rows = monthRows();
-
-    if (!selectedMonth) {
-      alert('Select a month first.');
-      return;
+    .intro-cacsf {
+        font-size: clamp(42px, 12vw, 62px) !important;
+        letter-spacing: 3px !important;
     }
 
-    if (!window.XLSX) {
-      alert(
-        'Excel export library did not load. Check your internet connection and reload the dashboard.'
-      );
-      return;
+    .intro-line-one {
+        font-size: clamp(23px, 7vw, 32px) !important;
+        letter-spacing: 1px !important;
     }
 
-    const data = rows.map(r => ({
-      'Title / Alias': r.alias || '',
-      'First name': r.first_name || '',
-      'Surname': r.surname || '',
-      'Full name': fullName(r),
-      'Email': r.email || '',
-      'Phone': r.phone || '',
-      'Birthday month': r.birth_month || '',
-      'Birthday day': r.birth_day || '',
-      'Graduation year': r.graduation_year || '',
-      'Profession': r.profession || ''
-    }));
+    .intro-line-two {
+        font-size: clamp(18px, 5.5vw, 25px) !important;
+        letter-spacing: .6px !important;
+        line-height: 1.35 !important;
+    }
+}
 
-    const wb = XLSX.utils.book_new();
+/* VERY SMALL PHONES */
 
-    const ws = XLSX.utils.json_to_sheet(
-      data.length
-        ? data
-        : [{
-            'Notice':
-              'No alumni registrations were recorded for this month.'
-          }]
-    );
-
-    ws['!cols'] = [
-      { wch: 18 }, { wch: 18 }, { wch: 18 },
-      { wch: 30 }, { wch: 30 }, { wch: 18 },
-      { wch: 18 }, { wch: 14 }, { wch: 16 },
-      { wch: 26 }
-    ];
-
-    XLSX.utils.book_append_sheet(
-      wb,
-      ws,
-      'Registrations'
-    );
-
-    XLSX.writeFile(
-      wb,
-      `CACSF_Birthday_Month_${selectedMonth}.xlsx`
-    );
-
-    audit(
-      'monthly_excel_exported',
-      'alumni',
-      selectedMonth,
-      { record_count: rows.length }
-    );
-  }
-
-  async function downloadMonthPhotos() {
-    const rows = monthRows().filter(r => r.photo_path);
-
-    if (!selectedMonth) {
-      alert('Select a month first.');
-      return;
+@media (max-width: 360px) {
+    .logo-intro img {
+        width: 72vw;
     }
 
-    if (!window.JSZip) {
-      alert(
-        'ZIP library did not load. Check your internet connection and reload the dashboard.'
-      );
-      return;
+    .intro-cacsf {
+        font-size: 39px !important;
     }
 
-    if (!rows.length) {
-      alert('There are no profile photos for this month.');
-      return;
+    .intro-line-one {
+        font-size: 21px !important;
     }
 
-    const button = $('download-month-photos');
-
-    setBusy(button, true, 'Preparing ZIP…');
-
-    try {
-      const zip = new JSZip();
-
-      const folder = zip.folder(
-        `CACSF_Birthday_Month_Photos_${selectedMonth}`
-      );
-
-      const failures = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i];
-
-        try {
-          const url = publicUrl(r.photo_path);
-          const response = await fetch(url);
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          const blob = await response.blob();
-
-          const ext =
-            (r.photo_path.split('.').pop() || 'jpg')
-              .split('?')[0]
-              .replace(/[^a-z0-9]/gi, '') || 'jpg';
-
-          const base =
-            `${fullName(r).replace(/[^a-z0-9_-]+/gi, '_')}_${r.id || i + 1}`;
-
-          folder.file(`${base}.${ext}`, blob);
-
-          button.textContent =
-            `Adding ${i + 1}/${rows.length}…`;
-
-        } catch (e) {
-          failures.push(
-            `${fullName(r)} (${e.message})`
-          );
-        }
-      }
-
-      if (Object.keys(folder.files).length === 0) {
-        throw new Error(
-          'No photos could be downloaded. Check that the storage bucket is public or that authenticated download policies allow access.'
-        );
-      }
-
-      if (failures.length) {
-        folder.file(
-          'DOWNLOAD_NOTES.txt',
-          `Some photos could not be downloaded:\n${failures.join('\n')}`
-        );
-      }
-
-      const blob = await zip.generateAsync({
-        type: 'blob'
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-
-      a.href = url;
-      a.download =
-        `CACSF_Alumni_Photos_${selectedMonth}.zip`;
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      URL.revokeObjectURL(url);
-
-      if (failures.length) {
-        alert(
-          `${rows.length - failures.length} photo(s) added. ${failures.length} could not be downloaded; see DOWNLOAD_NOTES.txt in the ZIP.`
-        );
-      }
-
-      audit(
-        'monthly_photos_zip_downloaded',
-        'alumni',
-        selectedMonth,
-        {
-          photo_count: rows.length - failures.length,
-          failed_count: failures.length
-        }
-      );
-
-    } catch (e) {
-      alert(
-        `Photo ZIP could not be created: ${e.message}`
-      );
-    } finally {
-      setBusy(button, false);
+    .intro-line-two {
+        font-size: 17px !important;
     }
-  }
+}
+.logo-intro {
+    background-image:
+        linear-gradient(
+            rgba(3, 20, 11, 0.35),
+            rgba(3, 20, 11, 0.35)
+        ),
+        url("../animationbg.jpg");
 
-  $('directory-export')?.addEventListener('click', () => {
-    if (!window.XLSX) {
-      alert('Excel export library did not load.');
-      return;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+}
+/* =========================================
+   HOMEPAGE BRAND — LARGER & BOLDER
+========================================= */
+
+.site-header .brand {
+    gap: 14px;
+    font-size: 23px;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.site-header .brand-mark {
+    width: 48px;
+    height: 48px;
+    font-size: 29px;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.site-header .brand small {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-top: 6px;
+}
+
+/* Tablets */
+@media (max-width: 820px) {
+    .site-header .brand {
+        font-size: 21px;
     }
 
-    const data = alumni.map(r => ({
-      'Title / Alias': r.alias || '',
-      'First name': r.first_name || '',
-      'Surname': r.surname || '',
-      'Full name': fullName(r),
-      'Email': r.email || '',
-      'Phone': r.phone || '',
-      'Birthday month': r.birth_month || '',
-      'Birthday day': r.birth_day || '',
-      'Graduation year': r.graduation_year || '',
-      'Profession': r.profession || ''
-    }));
+    .site-header .brand-mark {
+        width: 44px;
+        height: 44px;
+        font-size: 27px;
+    }
+}
 
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(data),
-      'All Alumni'
-    );
-
-    XLSX.writeFile(
-      wb,
-      `CACSF_All_Alumni_${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
-
-    audit(
-      'alumni_directory_exported',
-      'alumni',
-      null,
-      { record_count: alumni.length }
-    );
-  });
-
-  /* ==========================================================
-     ALUMNI DETAILS, EDITING AND DELETION
-     ========================================================== */
-
-  function getAlumnus(id) {
-    return alumni.find(
-      r => String(r.id) === String(id)
-    );
-  }
-
-  /*
-   * Permanently delete one alumni registration.
-   * This operation is available to Super Admins only.
-   *
-   * The database deletion is performed first.
-   * The profile photo is removed only after the database
-   * confirms that the alumni row was deleted.
-   */
-
-  async function deleteAlumnus(id, button) {
-    if (!isSuperAdmin) {
-      alert(
-        'Only a Super Admin can delete alumni records.'
-      );
-      return;
+/* Mobile */
+@media (max-width: 560px) {
+    .site-header .brand {
+        font-size: 29px;
+        gap: 10px;
     }
 
-    const record = getAlumnus(id);
-
-    if (!record) {
-      alert(
-        'This alumni record could not be found. Refresh the dashboard and try again.'
-      );
-      return;
+    .site-header .brand-mark {
+        width: 42px;
+        height: 42px;
+        font-size: 25px;
     }
 
-    const name = fullName(record);
-
-    const confirmed = window.confirm(
-      `PERMANENTLY DELETE THIS ALUMNI RECORD?\n\n` +
-      `Name: ${name}\n` +
-      `Email: ${record.email || 'Not provided'}\n\n` +
-      `The registration record will be permanently deleted.\n` +
-      `Its profile photograph will also be removed from CACSF storage, if one exists.\n\n` +
-      `This action cannot be undone.\n\n` +
-      `Do you want to continue?`
-    );
-
-    if (!confirmed) return;
-
-    setBusy(button, true, 'Deleting…');
-
-    try {
-      // Verify the current account's Super Admin permission again.
-      const {
-        data: stillSuperAdmin,
-        error: roleError
-      } = await client.rpc('is_cacsf_super_admin');
-
-      if (roleError) {
-        throw new Error(
-          `Could not verify Super Admin permission: ${roleError.message}`
-        );
-      }
-
-      if (stillSuperAdmin !== true) {
-        throw new Error(
-          'Your Super Admin permission is no longer active. The alumni record was not deleted.'
-        );
-      }
-
-      // Delete the alumni database row and return its ID.
-      const { data: deletedRows, error: deleteError } =
-        await client
-          .from('alumni')
-          .delete()
-          .eq('id', id)
-          .select('id');
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      // Do not report success if Supabase deleted no row.
-      if (!deletedRows || deletedRows.length === 0) {
-        throw new Error(
-          'Supabase did not delete this record. Check the alumni table DELETE Row Level Security policy and try again.'
-        );
-      }
-
-      // Remove the profile photo after the database deletion succeeds.
-      if (record.photo_path) {
-        await storageRemove(record.photo_path);
-      }
-
-      // Record the deletion in the existing audit log.
-      await audit(
-        'alumnus_record_deleted',
-        'alumni',
-        id,
-        {
-          name,
-          email: record.email || null,
-          photo_path: record.photo_path || null
-        }
-      );
-
-      // Remove the deleted record from the local dashboard data.
-      alumni = alumni.filter(
-        r => String(r.id) !== String(id)
-      );
-      selectedAlumniIds.delete(String(id));
-
-      // Refresh all dashboard sections and monthly counts.
-      renderAll();
-
-      alert(
-        `${name} has been successfully deleted from the CACSF alumni directory.`
-      );
-
-    } catch (error) {
-      console.error(
-        'Alumni deletion failed:',
-        error
-      );
-
-      alert(
-        `Could not delete this alumni record:\n\n${error.message}`
-      );
-
-    } finally {
-      setBusy(button, false);
+    .site-header .brand small {
+        font-size: 9px;
+        letter-spacing: 1.5px;
     }
-  }
+}
+/* =========================================
+   CACSF HOMEPAGE HEADER BRAND ENLARGEMENT
+========================================= */
 
-  document.addEventListener('click', e => {
-    const view =
-      e.target.closest('[data-view-alumnus]');
+.register-header .register-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 26px !important;
+    font-weight: 900 !important;
+    letter-spacing: -1px !important;
+    line-height: 1.15 !important;
+}
 
-    const edit =
-      e.target.closest('[data-edit-alumnus]');
+.register-header .register-brand img {
+    width: 75px !important;
+    height: 75px !important;
+    min-width: 75px !important;
+    object-fit: contain !important;
+}
 
-    const remove =
-      e.target.closest('[data-delete-alumnus]');
+.register-header .register-brand span {
+    font-size: 26px !important;
+    font-weight: 900 !important;
+}
 
-    if (view) {
-      showDetails(view.dataset.viewAlumnus);
+.register-header .register-brand small {
+    display: block !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    letter-spacing: 2.5px !important;
+    margin-top: 7px !important;
+}
+
+/* MOBILE */
+@media(max-width:560px) {
+    .register-header .register-brand {
+        font-size: 21px !important;
+        gap: 11px !important;
     }
 
-    if (edit && isSuperAdmin) {
-      openEdit(edit.dataset.editAlumnus);
+    .register-header .register-brand img {
+        width: 58px !important;
+        height: 58px !important;
+        min-width: 58px !important;
     }
 
-    if (remove && isSuperAdmin) {
-      deleteAlumnus(
-        remove.dataset.deleteAlumnus,
-        remove
-      );
-    }
-  });
-
-  function showDetails(id) {
-    const r = getAlumnus(id);
-    if (!r) return;
-
-    audit(
-      'alumnus_record_viewed',
-      'alumni',
-      id,
-      {}
-    );
-
-    const fields = [
-      ['Full name', fullName(r)],
-      ['Email', r.email],
-      ['Phone', r.phone],
-      [
-        'Birthday',
-        [r.birth_month, r.birth_day]
-          .filter(Boolean).join(' ')
-      ],
-      ['Graduation year', r.graduation_year],
-      ['Profession', r.profession],
-      ['Registered', fmtDate(r.created_at)],
-      ['Profile photo', r.photo_path]
-    ];
-
-    const photo = r.photo_path
-      ? `
-        <div class="detail-cell">
-          <small>Profile photo</small>
-          <img
-            class="details-photo"
-            data-open-lightbox="${esc(publicUrl(r.photo_path))}"
-            src="${esc(publicUrl(r.photo_path))}"
-            alt="${esc(fullName(r))}"
-          >
-        </div>
-      `
-      : '';
-
-    $('alumni-details-content').innerHTML =
-      fields
-        .filter(([k, v]) =>
-          k !== 'Profile photo' && v
-        )
-        .map(([k, v]) => `
-          <div class="detail-cell">
-            <small>${esc(k)}</small>
-            <b>${esc(v)}</b>
-          </div>
-        `).join('') + photo;
-
-    $('alumni-details-dialog').showModal();
-  }
-
-  function openEdit(id) {
-    if (!isSuperAdmin) return;
-
-    const r = getAlumnus(id);
-    if (!r) return;
-
-    const form = $('alumni-edit-form');
-
-    form.reset();
-
-    [
-      'id',
-      'alias',
-      'first_name',
-      'surname',
-      'email',
-      'birth_month',
-      'birth_day',
-      'graduation_year',
-      'phone',
-      'profession'
-    ].forEach(k => {
-      if (form.elements[k]) {
-        form.elements[k].value = r[k] ?? '';
-      }
-    });
-
-    const preview = $('alumni-edit-photo-preview');
-    if (preview) preview.innerHTML = r.photo_path ? `<img src="${esc(publicUrl(r.photo_path))}" alt="${esc(fullName(r))} profile photo" data-open-lightbox="${esc(publicUrl(r.photo_path))}">` : '<span class="muted">No profile photo uploaded.</span>';
-    say('edit-status', '');
-
-    $('alumni-dialog').showModal();
-  }
-
-  function closeDialog(id) {
-    const d = $(id);
-    if (d?.open) d.close();
-  }
-
-  [
-    'close-edit',
-    'cancel-edit'
-  ].forEach(id => {
-    $(id)?.addEventListener('click', () => {
-      closeDialog('alumni-dialog');
-    });
-  });
-
-  [
-    'close-details',
-    'details-close-button'
-  ].forEach(id => {
-    $(id)?.addEventListener('click', () => {
-      closeDialog('alumni-details-dialog');
-    });
-  });
-
-  $('alumni-edit-form')?.addEventListener(
-    'submit',
-    async e => {
-      e.preventDefault();
-
-      if (!isSuperAdmin) return;
-
-      const form = e.currentTarget;
-      const id = form.elements.id.value;
-      const old = getAlumnus(id);
-
-      if (!old) return;
-
-      const save =
-        form.querySelector('[type="submit"]');
-
-      setBusy(save, true, 'Saving…');
-
-      say('edit-status', 'Updating alumni record…');
-
-      let newPhotoPath = null;
-
-      try {
-        const payload = {};
-
-        [
-          'alias',
-          'first_name',
-          'surname',
-          'email',
-          'birth_month',
-          'phone',
-          'profession'
-        ].forEach(k => {
-          payload[k] =
-            form.elements[k].value.trim() || null;
-        });
-
-        payload.birth_day =
-          Number(form.elements.birth_day.value);
-
-        payload.graduation_year =
-          Number(form.elements.graduation_year.value);
-
-        const photo = form.elements.photo.files[0];
-
-        if (photo) {
-          if (!photo.type.startsWith('image/')) {
-            throw new Error(
-              'Please choose an image file for the profile photo.'
-            );
-          }
-
-          const ext =
-            (photo.name.split('.').pop() || 'jpg').toLowerCase();
-
-          newPhotoPath =
-            `alumni/${crypto.randomUUID()}.${ext}`;
-
-          const { error: uploadError } =
-            await client.storage
-              .from(BUCKET)
-              .upload(
-                newPhotoPath,
-                photo,
-                {
-                  upsert: false,
-                  contentType: photo.type
-                }
-              );
-
-          if (uploadError) throw uploadError;
-
-          payload.photo_path = newPhotoPath;
-        }
-
-        const { error } = await client
-          .from('alumni')
-          .update(payload)
-          .eq('id', id);
-
-        if (error) throw error;
-
-        if (newPhotoPath && old.photo_path) {
-          await storageRemove(old.photo_path);
-        }
-
-        await audit(
-          'alumnus_record_updated',
-          'alumni',
-          id,
-          {}
-        );
-
-        say(
-          'edit-status',
-          'Alumni record updated successfully.',
-          'success'
-        );
-
-        closeDialog('alumni-dialog');
-
-        await loadAll();
-
-      } catch (error) {
-        if (newPhotoPath) {
-          await storageRemove(newPhotoPath);
-        }
-
-        say(
-          'edit-status',
-          `Could not save changes: ${error.message}`,
-          'error'
-        );
-
-      } finally {
-        setBusy(save, false);
-      }
-    }
-  );
-
-  /* ==========================================================
-     MEDIA LIBRARY
-     ========================================================== */
-
-  function renderMedia() {
-    const filtered = media.filter(r =>
-      mediaFilter === 'all' ||
-      r.category === mediaFilter
-    );
-
-    $('media-filter-count').textContent =
-      `${filtered.length} item${filtered.length === 1 ? '' : 's'}`;
-
-    $('media-library').innerHTML = filtered.length
-      ? [...filtered]
-          .sort(dateSort)
-          .map(r => {
-            const url = publicUrl(r.file_path);
-            const isVideo = r.category === 'videos';
-
-            const preview = isVideo
-              ? `
-                <video
-                  src="${esc(url)}"
-                  controls
-                  preload="metadata"
-                ></video>
-              `
-              : `
-                <img
-                  src="${esc(url)}"
-                  alt="${esc(r.caption || 'CACSF media')}"
-                >
-              `;
-
-            return `
-              <article class="media-item">
-                ${preview}
-
-                <div class="media-item-body">
-                  <b>${esc(
-                    r.caption ||
-                    (isVideo ? 'Reunion video' : 'CACSF media')
-                  )}</b>
-
-                  <small>
-                    ${esc(r.year || '')}
-                    · ${esc(r.category || '')}
-                    · ${esc(fmtDate(r.created_at))}
-                  </small>
-
-                  <div class="item-actions">
-                    <a
-                      class="button"
-                      href="${esc(url)}"
-                      target="_blank"
-                      rel="noopener"
-                    >Open</a>
-
-                    <a
-                      class="button"
-                      href="${esc(url)}"
-                      download
-                    >Download</a>
-
-                    ${isSuperAdmin ? `
-                      <button
-                        class="button button-danger"
-                        type="button"
-                        data-delete-media="${esc(r.id)}"
-                      >Delete</button>
-                    ` : ''}
-                  </div>
-                </div>
-              </article>
-            `;
-          }).join('')
-      : '<div class="empty-cell">No media items in this category.</div>';
-  }
-
-  document
-    .querySelectorAll('[data-media-filter]')
-    .forEach(btn => {
-      btn.addEventListener('click', () => {
-        mediaFilter = btn.dataset.mediaFilter;
-
-        document
-          .querySelectorAll('[data-media-filter]')
-          .forEach(x => {
-            x.classList.toggle('selected', x === btn);
-          });
-
-        renderMedia();
-      });
-    });
-
-  /* ==========================================================
-     PROJECT GALLERY
-     ========================================================== */
-
-  function renderProjects() {
-    $('project-library-count').textContent =
-      `${projects.length} item${projects.length === 1 ? '' : 's'}`;
-
-    $('project-library').innerHTML = projects.length
-      ? [...projects]
-          .sort(dateSort)
-          .map(r => {
-            const url = publicUrl(r.file_path);
-
-            return `
-              <article class="project-item">
-                <a
-                  href="${esc(url)}"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  <img
-                    src="${esc(url)}"
-                    alt="${esc(r.caption || 'Project update')}"
-                  >
-                </a>
-
-                <div class="project-item-body">
-                  <b>${esc(r.caption || 'Project update')}</b>
-
-                  <small>${esc(fmtDate(r.created_at))}</small>
-
-                  <div class="item-actions">
-                    <a
-                      class="button"
-                      href="${esc(url)}"
-                      target="_blank"
-                      rel="noopener"
-                    >Open</a>
-
-                    ${isSuperAdmin ? `
-                      <button
-                        class="button button-danger"
-                        type="button"
-                        data-delete-project="${esc(r.id)}"
-                      >Delete</button>
-                    ` : ''}
-                  </div>
-                </div>
-              </article>
-            `;
-          }).join('')
-      : '<div class="empty-cell">No project updates have been published.</div>';
-  }
-
-  /* ==========================================================
-     MEDIA AND PROJECT UPLOADS
-     ========================================================== */
-
-  async function uploadAndInsert(
-    formId,
-    statusId,
-    table,
-    folder,
-    buildRow,
-    validate
-  ) {
-    const form = $(formId);
-    if (!form) return;
-
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-
-      if (!isSuperAdmin) {
-        say(
-          statusId,
-          'Only a Super Admin can publish this content.',
-          'error'
-        );
-        return;
-      }
-
-      const file = form.elements.file?.files?.[0];
-
-      if (!file) {
-        say(statusId, 'Please choose a file.', 'error');
-        return;
-      }
-
-      if (validate && !validate(file, form)) {
-        say(
-          statusId,
-          'This file type is not allowed for the selected category.',
-          'error'
-        );
-        return;
-      }
-
-      const submit =
-        form.querySelector('[type="submit"]');
-
-      setBusy(submit, true, 'Uploading…');
-
-      say(
-        statusId,
-        'Uploading file to Supabase Storage…'
-      );
-
-      let path = null;
-
-      try {
-        const ext =
-          (file.name.split('.').pop() || 'bin')
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '') || 'bin';
-
-        path =
-          `${folder}/${crypto.randomUUID()}.${ext}`;
-
-        const { error: uploadError } =
-          await client.storage
-            .from(BUCKET)
-            .upload(
-              path,
-              file,
-              {
-                upsert: false,
-                contentType:
-                  file.type || 'application/octet-stream'
-              }
-            );
-
-        if (uploadError) throw uploadError;
-
-        const row = buildRow(
-          new FormData(form),
-          path
-        );
-
-        const { error: insertError } =
-          await client.from(table).insert(row);
-
-        if (insertError) throw insertError;
-
-        await audit(
-          table === 'media'
-            ? 'media_uploaded'
-            : 'project_uploaded',
-          table,
-          null,
-          { caption: row.caption || null }
-        );
-
-        say(
-          statusId,
-          'Upload published successfully.',
-          'success'
-        );
-
-        form.reset();
-
-        await loadAll();
-
-      } catch (error) {
-        if (path) {
-          await storageRemove(path);
-        }
-
-        say(
-          statusId,
-          `Upload failed: ${error.message}`,
-          'error'
-        );
-
-      } finally {
-        setBusy(submit, false);
-      }
-    });
-  }
-
-  uploadAndInsert(
-    'media-upload',
-    'upload-status',
-    'media',
-    'admin-media',
-    (f, path) => ({
-      year: Number(f.get('year')),
-      category: f.get('category'),
-      caption: f.get('caption') || null,
-      file_path: path
-    }),
-    (file, form) => {
-      const category = form.elements.category.value;
-
-      if (category === 'videos') {
-        return [
-          'video/mp4',
-          'video/webm'
-        ].includes(file.type);
-      }
-
-      return file.type.startsWith('image/');
-    }
-  );
-
-  uploadAndInsert(
-    'project-upload',
-    'project-status',
-    'project_gallery',
-    'projects',
-    (f, path) => ({
-      caption: f.get('caption') || null,
-      file_path: path
-    }),
-    file => file.type.startsWith('image/')
-  );
-
-  /* ==========================================================
-     DELETE MEDIA AND PROJECT ITEMS
-     ========================================================== */
-
-  document.addEventListener('click', async e => {
-    const mediaBtn =
-      e.target.closest('[data-delete-media]');
-
-    const projectBtn =
-      e.target.closest('[data-delete-project]');
-
-    if (!isSuperAdmin) return;
-
-    if (mediaBtn) {
-      const row = media.find(
-        x => String(x.id) === mediaBtn.dataset.deleteMedia
-      );
-
-      if (
-        !row ||
-        !confirm('Delete this media item from the website?')
-      ) {
-        return;
-      }
-
-      mediaBtn.disabled = true;
-
-      const { error } = await client
-        .from('media')
-        .delete()
-        .eq('id', row.id);
-
-      if (error) {
-        alert(
-          `Could not delete media record: ${error.message}`
-        );
-
-        mediaBtn.disabled = false;
-        return;
-      }
-
-      await audit(
-        'media_deleted',
-        'media',
-        row.id,
-        {}
-      );
-
-      await storageRemove(row.file_path);
-      await loadAll();
+    .register-header .register-brand span {
+        font-size: 21px !important;
     }
 
-    if (projectBtn) {
-      const row = projects.find(
-        x => String(x.id) === projectBtn.dataset.deleteProject
-      );
-
-      if (
-        !row ||
-        !confirm('Delete this project update from the website?')
-      ) {
-        return;
-      }
-
-      projectBtn.disabled = true;
-
-      const { error } = await client
-        .from('project_gallery')
-        .delete()
-        .eq('id', row.id);
-
-      if (error) {
-        alert(
-          `Could not delete project record: ${error.message}`
-        );
-
-        projectBtn.disabled = false;
-        return;
-      }
-
-      await audit(
-        'project_deleted',
-        'project_gallery',
-        row.id,
-        {}
-      );
-
-      await storageRemove(row.file_path);
-      await loadAll();
+    .register-header .register-brand small {
+        font-size: 9px !important;
+        letter-spacing: 1.8px !important;
     }
-  });
+}
+.correction-link {
+  margin: 22px auto;
+  text-align: center;
+  font-size: 14px;
+}
 
-  /* ==========================================================
-     CONTACT MESSAGES
-     ========================================================== */
+.correction-link a {
+  color: #16843b;
+  font-weight: 800;
+  text-decoration: underline;
+}
 
-  function renderMessages() {
-    const q = (
-      $('message-search')?.value || ''
-    ).trim().toLowerCase();
-
-    const rows = messages
-      .filter(r =>
-        [
-          r.name,
-          r.email,
-          r.subject,
-          r.message
-        ].join(' ').toLowerCase().includes(q)
-      )
-      .sort(dateSort);
-
-    $('messages-table').innerHTML = rows.length
-      ? rows.map(r => `
-          <tr>
-            <td>
-              ${esc(r.name || '—')}
-              <br>
-              <small>${esc(r.email || '')}</small>
-            </td>
-
-            <td>${esc(r.subject || '—')}</td>
-
-            <td style="white-space:normal;min-width:220px;max-width:460px">
-              ${esc(r.message || '')}
-            </td>
-
-            <td>${esc(fmtDate(r.created_at))}</td>
-          </tr>
-        `).join('')
-      : `
-          <tr>
-            <td colspan="4" class="empty-cell">
-              No matching messages found.
-            </td>
-          </tr>
-        `;
-  }
-
-  $('message-search')?.addEventListener(
-    'input',
-    renderMessages
-  );
-
-  /* ==========================================================
-     PASSWORD UPDATE
-     ========================================================== */
-
-  $('password-form')?.addEventListener(
-    'submit',
-    async e => {
-      e.preventDefault();
-
-      const form = e.currentTarget;
-
-      const password =
-        form.elements.password.value;
-
-      const confirmPassword =
-        form.elements.confirm.value;
-
-      if (password.length < 8) {
-        say(
-          'password-status',
-          'Password must contain at least 8 characters.',
-          'error'
-        );
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        say(
-          'password-status',
-          'The passwords do not match.',
-          'error'
-        );
-        return;
-      }
-
-      const button =
-        form.querySelector('[type="submit"]');
-
-      setBusy(button, true, 'Updating…');
-
-      say(
-        'password-status',
-        'Updating your password…'
-      );
-
-      const { error } =
-        await client.auth.updateUser({ password });
-
-      setBusy(button, false);
-
-      if (error) {
-        say(
-          'password-status',
-          `Password update failed: ${error.message}`,
-          'error'
-        );
-      } else {
-        form.reset();
-
-        say(
-          'password-status',
-          'Your password has been updated successfully.',
-          'success'
-        );
-      }
-    }
-  );
-
-
-  /* ==========================================================
-     WEDDING ANNIVERSARIES — SEPARATE REGISTRATION DIRECTORY
-     Uses wedding_registrations and the private cacsf-weddings bucket.
-     ========================================================== */
-
-  const WEDDING_BUCKET = 'cacsf-weddings';
-
-  async function weddingPhotoUrl(path) {
-    if (!path || !client) return '';
-    try {
-      const { data, error } = await client.storage
-        .from(WEDDING_BUCKET)
-        .createSignedUrl(path, 60 * 60);
-      if (error) throw error;
-      return data?.signedUrl || '';
-    } catch (error) {
-      console.warn('Could not create wedding photo link:', error.message);
-      return '';
-    }
-  }
-
-
-  function birthdayExportRows(rows) { return rows.map(r => ({'Title / Alias':r.alias||'','First name':r.first_name||'','Surname':r.surname||'','Full name':fullName(r),'Email':r.email||'','Phone':r.phone||'','Birthday month':r.birth_month||'','Birthday day':r.birth_day||'','Graduation year':r.graduation_year||'','Profession':r.profession||''})); }
-  function exportBirthdayWord(rows, filename) {
-    const clean=v=>String(v??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-    const body=rows.map(r=>`<tr><td>${clean(fullName(r))}</td><td>${clean(`${r.birth_month||''} ${r.birth_day||''}`)}</td><td>${clean(r.email)}</td><td>${clean(r.phone)}</td><td>${clean(r.graduation_year)}</td><td>${clean(r.profession)}</td></tr>`).join('');
-    const html=`<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;color:#242137}h1{color:#123b2a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:7px;text-align:left;font-size:10pt}th{background:#eee}</style></head><body><h1>CACSF Birthday & Alumni Records</h1><p>${clean(filename)} · ${rows.length} record(s)</p><table><thead><tr><th>Name</th><th>Birthday</th><th>Email</th><th>Phone</th><th>Graduation</th><th>Profession</th></tr></thead><tbody>${body}</tbody></table></body></html>`;
-    const blob=new Blob(['\ufeff',html],{type:'application/msword'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${safeFileName(filename)}.doc`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);audit('birthday_word_exported','alumni',null,{record_count:rows.length});
-  }
-  async function downloadBirthdayPhotos(rows, filename, button) {
-    const photos=rows.filter(r=>r.photo_path);if(!photos.length){alert('No profile photos are available in this selection.');return;}if(!window.JSZip){alert('ZIP library did not load.');return;}setBusy(button,true,'Preparing ZIP…');
-    try{const zip=new JSZip(),folder=zip.folder(safeFileName(filename)),fails=[];let count=0;for(const r of photos){try{const response=await fetch(publicUrl(r.photo_path));if(!response.ok)throw new Error(`HTTP ${response.status}`);const blob=await response.blob();const ext=(r.photo_path.split('.').pop()||'jpg').split('?')[0].replace(/[^a-z0-9]/gi,'')||'jpg';folder.file(`${safeFileName(fullName(r))}.${ext}`,blob);count++;}catch(e){fails.push(`${fullName(r)}: ${e.message}`);}}if(!count)throw new Error('No photos could be downloaded. Check the CACSF media bucket permissions.');if(fails.length)folder.file('DOWNLOAD_NOTES.txt',fails.join('\n'));const blob=await zip.generateAsync({type:'blob'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${safeFileName(filename)}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);audit('birthday_photos_zip_downloaded','alumni',null,{photo_count:count,failed_count:fails.length});if(fails.length)alert(`${count} photos added. ${fails.length} could not be downloaded; see DOWNLOAD_NOTES.txt.`);}catch(e){alert(`Could not create photo ZIP: ${e.message}`);}finally{setBusy(button,false);}
-  }
-  $('directory-export-word')?.addEventListener('click',()=>exportBirthdayWord(alumni,'CACSF_Alumni_Birthday_Records'));
-  $('birthday-export-xlsx')?.addEventListener('click',()=>{if(!window.XLSX){alert('Excel export library did not load.');return;}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(birthdayExportRows(alumni)),'Birthday registrations');XLSX.writeFile(wb,'CACSF_Birthday_Directory.xlsx');audit('birthday_excel_exported','alumni',null,{record_count:alumni.length});});
-  $('birthday-export-word')?.addEventListener('click',()=>exportBirthdayWord(alumni,'CACSF_Birthday_Directory'));
-  $('anniversary-export-xlsx')?.addEventListener('click',()=>exportWeddingExcel(weddings,'CACSF_Anniversary_Directory'));
-  $('anniversary-export-word')?.addEventListener('click',()=>exportWeddingWord(weddings,'CACSF_Anniversary_Directory'));
-  $('directory-export-photos')?.addEventListener('click',e=>downloadBirthdayPhotos(alumni,'CACSF_All_Alumni_Photos',e.currentTarget));
-  $('download-selected-alumni-photos')?.addEventListener('click',e=>{const rows=alumni.filter(r=>selectedAlumniIds.has(String(r.id)));if(!rows.length){alert('Select one or more alumni using the checkboxes in the directory first.');return;}downloadBirthdayPhotos(rows,'CACSF_Selected_Alumni_Photos',e.currentTarget);});
-  $('download-month-word')?.addEventListener('click',()=>exportBirthdayWord(monthRows(),`CACSF_${selectedMonth}_Birthday_Records`));
-
-  /* ==========================================================
-     WEDDING ANNIVERSARY WORKSPACE — independent records/tools
-     ========================================================== */
-  const selectedWeddingIds = new Set();
-  const weddingMonths = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  let selectedWeddingMonth = '';
-  const weddingMonthName = value => {
-    if (!value) return '';
-    const d = new Date(`${value}T00:00:00`);
-    return Number.isNaN(d.getTime()) ? '' : weddingMonths[d.getMonth()];
-  };
-  const weddingName = r => String(r?.couple_name || 'Unnamed couple');
-  function weddingYears(value) { return weddingYearsAt(value); }
-  const safeFileName = value => String(value || 'record').normalize('NFKD').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,90) || 'record';
-  const weddingPhotoPaths = r => [r.photo_one_path,r.photo_two_path].filter(Boolean);
-  function anniversaryDate(value) {
-    if (!value) return null;
-    const d = new Date(`${value}T00:00:00`); if (Number.isNaN(d.getTime())) return null;
-    const now = new Date(); let next = new Date(now.getFullYear(),d.getMonth(),d.getDate());
-    if (next < new Date(now.getFullYear(),now.getMonth(),now.getDate())) next.setFullYear(now.getFullYear()+1);
-    return next;
-  }
-  function weddingYearsAt(value, date = new Date()) {
-    if (!value) return 0; const d = new Date(`${value}T00:00:00`); if (Number.isNaN(d.getTime())) return 0;
-    let years = date.getFullYear()-d.getFullYear();
-    if (date.getMonth()<d.getMonth() || (date.getMonth()===d.getMonth() && date.getDate()<d.getDate())) years--;
-    return Math.max(0,years);
-  }
-  function weddingRows(query='') {
-    const q=String(query).trim().toLowerCase();
-    return weddings.filter(r => [r.couple_name,r.email,r.wedding_date].join(' ').toLowerCase().includes(q));
-  }
-  function renderWeddingOverview() {
-    const now=new Date(), month=now.getMonth();
-    const thisMonth=weddings.filter(r=>{const d=new Date(`${r.wedding_date}T00:00:00`);return !Number.isNaN(d.getTime())&&d.getMonth()===month;});
-    const withPhotos=weddings.filter(r=>weddingPhotoPaths(r).length);
-    [['wedding-total',weddings.length],['wedding-this-month',thisMonth.length],['wedding-with-photos',withPhotos.length]].forEach(([id,v])=>{if($(id))$(id).textContent=v.toLocaleString();});
-    const recent=$('wedding-recent-table');
-    if(recent) recent.innerHTML=[...weddings].sort((a,b)=>new Date(b.created_at||b.wedding_date)-new Date(a.created_at||a.wedding_date)).slice(0,6).map(r=>`<tr><td><strong>${esc(weddingName(r))}</strong></td><td>${esc(fmtDate(r.wedding_date))}</td><td>${esc(r.email||'—')}</td><td>${esc(fmtDate(r.created_at))}</td></tr>`).join('')||'<tr><td colspan="4" class="empty-cell">No wedding registrations yet.</td></tr>';
-    const months=$('wedding-overview-months'); if(months) months.innerHTML=weddingMonths.map((m,i)=>`<div class="mini-month"><b>${weddings.filter(r=>new Date(`${r.wedding_date}T00:00:00`).getMonth()===i).length}</b><span>${m.slice(0,3)}</span></div>`).join('');
-  }
-  function renderBirthdayOverview() {
-    const now=new Date(), m=now.getMonth();
-    const total=alumni.length, birthdayRows=alumni.filter(r=>r.birth_month&&r.birth_day);
-    const current=birthdayRows.filter(r=>monthNumber(r.birth_month)===m+1);
-    const photos=alumni.filter(r=>r.photo_path);
-    [['birthday-total',total],['birthday-birthdays',birthdayRows.length],['birthday-this-month',current.length],['birthday-photos',photos.length]].forEach(([id,v])=>{if($(id))$(id).textContent=v.toLocaleString();});
-    const recent=$('birthday-recent-table'); if(recent) recent.innerHTML=[...alumni].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,6).map(r=>`<tr><td><strong>${esc(fullName(r))}</strong></td><td>${esc(`${r.birth_month||''} ${r.birth_day||''}`.trim()||'—')}</td><td>${esc(r.email||'—')}</td><td>${esc(fmtDate(r.created_at))}</td></tr>`).join('')||'<tr><td colspan="4" class="empty-cell">No alumni registrations yet.</td></tr>';
-    const months=$('birthday-overview-months'); if(months) months.innerHTML=birthdayMonths.map(m=>`<div class="mini-month"><b>${birthdayRows.filter(r=>birthdayMonthValue(r.birth_month)===m).length}</b><span>${m.slice(0,3)}</span></div>`).join('');
-  }
-  function renderWeddingMonthGrid() {
-    const grid=$('wedding-month-grid'); if(!grid)return;
-    grid.innerHTML=weddingMonths.map((month,i)=>{const count=weddings.filter(r=>new Date(`${r.wedding_date}T00:00:00`).getMonth()===i).length;return `<button class="month-card${selectedWeddingMonth===month?' selected':''}" type="button" data-wedding-month="${month}"><span>${month}</span><b>${count}</b><small>${count===1?'couple':'couples'}</small></button>`;}).join('');
-    grid.querySelectorAll('[data-wedding-month]').forEach(btn=>btn.addEventListener('click',()=>selectWeddingMonth(btn.dataset.weddingMonth)));
-  }
-  function weddingMonthRows() {return weddings.filter(r=>weddingMonthName(r.wedding_date)===selectedWeddingMonth).sort((a,b)=>new Date(a.wedding_date)-new Date(b.wedding_date));}
-  function selectWeddingMonth(month) {
-    selectedWeddingMonth=month; renderWeddingMonthGrid(); const rows=weddingMonthRows();
-    if($('wedding-month-detail-panel')) $('wedding-month-detail-panel').hidden=false;
-    if($('wedding-month-detail-title')) $('wedding-month-detail-title').textContent=`${month} Anniversaries`;
-    if($('wedding-month-detail-note')) $('wedding-month-detail-note').textContent=`${rows.length} couple${rows.length===1?'':'s'} celebrate in ${month}.`;
-    if($('wedding-month-table')) $('wedding-month-table').innerHTML=rows.map(r=>`<tr><td><strong>${esc(weddingName(r))}</strong></td><td>${esc(fmtDate(r.wedding_date))}</td><td>${esc(r.email||'—')}</td><td>${esc(weddingYears(r.wedding_date))}</td><td><button class="action-link" data-wedding-view="${esc(r.id)}" type="button">View</button> <button class="action-link" data-wedding-edit="${esc(r.id)}" type="button">Edit</button> ${isSuperAdmin?`<button class="action-link danger" data-delete-wedding="${esc(r.id)}" type="button">Delete</button>`:''}</td></tr>`).join('')||`<tr><td colspan="5" class="empty-cell">No anniversaries in ${esc(month)}.</td></tr>`;
-  }
-  function renderAnniversaries() {
-    const q=$('anniversary-search')?.value||''; const rows=weddingRows(q).sort((a,b)=>(anniversaryDate(a.wedding_date)||new Date(8640000000000000))-(anniversaryDate(b.wedding_date)||new Date(8640000000000000)));
-    if($('anniversary-count')) $('anniversary-count').textContent=`${rows.length} anniversary record${rows.length===1?'':'s'}`;
-    if($('anniversary-table')) $('anniversary-table').innerHTML=rows.map(r=>`<tr><td><strong>${esc(weddingName(r))}</strong></td><td>${esc(fmtDate(r.wedding_date))}</td><td>${esc(fmtDate(anniversaryDate(r.wedding_date)))}</td><td>${esc(weddingYears(r.wedding_date))}</td><td>${esc(r.email||'—')}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No anniversary records found.</td></tr>';
-  }
-  async function downloadWeddingPhotos(rows, filename, button) {
-    const withPhotos=rows.filter(r=>weddingPhotoPaths(r).length); if(!withPhotos.length){alert('No wedding photos are available in this selection.');return;}
-    if(!window.JSZip){alert('ZIP library did not load.');return;} setBusy(button,true,'Preparing ZIP…');
-    try {const zip=new JSZip(),folder=zip.folder(safeFileName(filename)),fails=[];let n=0;
-      for(const r of withPhotos){for(let i=0;i<weddingPhotoPaths(r).length;i++){const path=weddingPhotoPaths(r)[i];try{const url=await weddingPhotoUrl(path);if(!url)throw new Error('Could not create secure photo link');const response=await fetch(url);if(!response.ok)throw new Error(`HTTP ${response.status}`);const blob=await response.blob();const ext=(path.split('.').pop()||'jpg').split('?')[0].replace(/[^a-z0-9]/gi,'')||'jpg';const suffix=weddingPhotoPaths(r).length>1?`_${i+1}`:'';folder.file(`${safeFileName(weddingName(r))}${suffix}.${ext}`,blob);n++;}catch(e){fails.push(`${weddingName(r)}: ${e.message}`);}}}
-      if(!n)throw new Error('No photos could be downloaded. Check Storage permissions.'); if(fails.length)folder.file('DOWNLOAD_NOTES.txt',fails.join('\n'));
-      const blob=await zip.generateAsync({type:'blob'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${safeFileName(filename)}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-      await audit('wedding_photos_zip_downloaded','wedding_registrations',null,{photo_count:n,failed_count:fails.length});if(fails.length)alert(`${n} photos added. ${fails.length} photo(s) could not be downloaded; see DOWNLOAD_NOTES.txt.`);
-    }catch(e){alert(`Could not create wedding photo ZIP: ${e.message}`);}finally{setBusy(button,false);}
-  }
-  function weddingExportRows(rows) {return rows.map(r=>({'Couples names':r.couple_name||'','Wedding date':r.wedding_date||'','Email address':r.email||'','Years together':weddingYears(r.wedding_date)}));}
-  function exportWeddingExcel(rows,filename) {if(!window.XLSX){alert('Excel export library did not load.');return;}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(weddingExportRows(rows)),'Wedding registrations');XLSX.writeFile(wb,`${safeFileName(filename)}.xlsx`);audit('wedding_excel_exported','wedding_registrations',null,{record_count:rows.length});}
-  function exportWeddingWord(rows,filename) {const escDoc=v=>String(v??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));const table=rows.map(r=>`<tr><td>${escDoc(r.couple_name)}</td><td>${escDoc(r.wedding_date)}</td><td>${escDoc(r.email)}</td><td>${weddingYears(r.wedding_date)}</td></tr>`).join('');const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escDoc(filename)}</title><style>body{font-family:Arial,sans-serif;color:#222}h1{color:#123b2a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#eee}</style></head><body><h1>CACSF Wedding Anniversary Records</h1><p>${escDoc(filename)} · ${rows.length} record(s)</p><table><thead><tr><th>Couple</th><th>Wedding date</th><th>Email</th><th>Years together</th></tr></thead><tbody>${table}</tbody></table></body></html>`;const blob=new Blob(['\ufeff',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${safeFileName(filename)}.doc`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);audit('wedding_word_exported','wedding_registrations',null,{record_count:rows.length});}
-  function renderWeddings() {
-    const table=$('wedding-table');if(!table)return;const rows=weddingRows($('wedding-search')?.value||'');
-    if($('wedding-count')) $('wedding-count').textContent=`${rows.length} wedding registration${rows.length===1?'':'s'}`;
-    if($('wedding-table')) $('wedding-table').innerHTML=rows.map(r=>`<tr><td><input type="checkbox" data-select-wedding="${esc(r.id)}" ${selectedWeddingIds.has(String(r.id))?'checked':''}></td><td><strong>${esc(weddingName(r))}</strong></td><td>${esc(fmtDate(r.wedding_date))}</td><td>${esc(r.email||'—')}</td><td>${esc(weddingYears(r.wedding_date))}</td><td>${esc(fmtDate(r.created_at))}</td><td><button class="action-link" type="button" data-wedding-view="${esc(r.id)}">View</button> <button class="action-link" type="button" data-wedding-edit="${esc(r.id)}">Edit</button> ${isSuperAdmin?`<button class="action-link danger" type="button" data-delete-wedding="${esc(r.id)}">Delete</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="empty-cell">No wedding registrations found.</td></tr>';
-    const count=$('selected-wedding-count');if(count)count.textContent=selectedWeddingIds.size;const del=$('delete-selected-weddings');if(del){del.hidden=!isSuperAdmin||!selectedWeddingIds.size;del.disabled=!selectedWeddingIds.size;}
-  }
-  $('wedding-search')?.addEventListener('input',renderWeddings);
-  $('anniversary-search')?.addEventListener('input',renderAnniversaries);
-  $('refresh-weddings')?.addEventListener('click',async()=>{const b=$('refresh-weddings');setBusy(b,true,'Refreshing…');try{weddings=await loadTable('wedding_registrations');renderWeddings();renderWeddingOverview();renderWeddingMonthGrid();renderAnniversaries();say('wedding-status','Wedding registrations refreshed.','success');}catch(e){say('wedding-status',`Could not refresh: ${e.message}`,'error');}finally{setBusy(b,false);}});
-  $('select-visible-weddings')?.addEventListener('change',e=>{const rows=weddingRows($('wedding-search')?.value||'');rows.forEach(r=>e.target.checked?selectedWeddingIds.add(String(r.id)):selectedWeddingIds.delete(String(r.id)));renderWeddings();});
-  $('wedding-table')?.addEventListener('change',e=>{const box=e.target.closest('[data-select-wedding]');if(!box)return;box.checked?selectedWeddingIds.add(String(box.dataset.selectWedding)):selectedWeddingIds.delete(String(box.dataset.selectWedding));renderWeddings();});
-  $('wedding-export-xlsx')?.addEventListener('click',()=>exportWeddingExcel(weddings,'CACSF_Wedding_Anniversary_Records'));
-  $('wedding-export-word')?.addEventListener('click',()=>exportWeddingWord(weddings,'CACSF_Wedding_Anniversary_Records'));
-  $('wedding-export-photos')?.addEventListener('click',e=>downloadWeddingPhotos(weddings,'CACSF_Wedding_Anniversary_Photos',e.currentTarget));
-  $('download-selected-wedding-photos')?.addEventListener('click',e=>{const rows=weddings.filter(r=>selectedWeddingIds.has(String(r.id)));if(!rows.length){alert('Select one or more couples using the checkboxes first.');return;}downloadWeddingPhotos(rows,'CACSF_Selected_Wedding_Photos',e.currentTarget);});
-  $('delete-selected-weddings')?.addEventListener('click',async e=>{if(!isSuperAdmin||!selectedWeddingIds.size)return;const ids=[...selectedWeddingIds];if(!confirm(`Delete ${ids.length} selected wedding registration(s)? This cannot be undone.`))return;setBusy(e.currentTarget,true,'Deleting…');const errors=[];for(const id of ids){const r=weddings.find(x=>String(x.id)===id);try{const {error}=await client.from('wedding_registrations').delete().eq('id',id);if(error)throw error;for(const path of weddingPhotoPaths(r||{})){const {error:se}=await client.storage.from(WEDDING_BUCKET).remove([path]);if(se)console.warn(se.message);}weddings=weddings.filter(x=>String(x.id)!==id);selectedWeddingIds.delete(id);}catch(err){errors.push(`${weddingName(r||{})}: ${err.message}`);}}renderWeddings();renderWeddingOverview();renderWeddingMonthGrid();renderAnniversaries();setBusy(e.currentTarget,false);alert(`${ids.length-errors.length} deleted.${errors.length?`\nCould not delete:\n${errors.join('\n')}`:''}`);});
-  $('download-wedding-month-xlsx')?.addEventListener('click',()=>exportWeddingExcel(weddingMonthRows(),`CACSF_${selectedWeddingMonth}_Anniversaries`));
-  $('download-wedding-month-word')?.addEventListener('click',()=>exportWeddingWord(weddingMonthRows(),`CACSF_${selectedWeddingMonth}_Anniversaries`));
-  $('download-wedding-month-photos')?.addEventListener('click',e=>downloadWeddingPhotos(weddingMonthRows(),`CACSF_${selectedWeddingMonth}_Anniversary_Photos`,e.currentTarget));
-  $('wedding-edit-form')?.addEventListener('submit',async e=>{e.preventDefault();if(!isSuperAdmin){say('wedding-edit-status','Only a Super Administrator can edit wedding registrations.','error');return;}const form=e.currentTarget,fd=new FormData(form),id=fd.get('id'),record=weddings.find(r=>String(r.id)===String(id));if(!record)return;const payload={couple_name:String(fd.get('couple_name')||'').trim(),wedding_date:fd.get('wedding_date')};const btn=form.querySelector('[type=submit]');setBusy(btn,true,'Saving…');let uploaded=[],oldPathsToRemove=[];try{for(const [field,column] of [['photo_one','photo_one_path'],['photo_two','photo_two_path']]){const file=fd.get(field);if(file&&file.size){const ext=(file.name.split('.').pop()||'jpg').replace(/[^a-z0-9]/gi,'');const path=`weddings/${id}/${Date.now()}_${field}.${ext}`;const {error:upErr}=await client.storage.from(WEDDING_BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(upErr)throw upErr;uploaded.push(path);if(record[column])oldPathsToRemove.push(record[column]);payload[column]=path;}}const {data,error}=await client.from('wedding_registrations').update(payload).eq('id',id).select().single();if(error)throw error;for(const oldPath of oldPathsToRemove){await client.storage.from(WEDDING_BUCKET).remove([oldPath]);}weddings=weddings.map(r=>String(r.id)===String(id)?{...r,...data}:r);$('wedding-edit-dialog')?.close();renderWeddings();renderWeddingOverview();renderWeddingMonthGrid();renderAnniversaries();await audit('wedding_registration_updated','wedding_registrations',id,payload);}catch(err){for(const path of uploaded)await client.storage.from(WEDDING_BUCKET).remove([path]);say('wedding-edit-status',`Could not save changes: ${err.message}`,'error');}finally{setBusy(btn,false);}});
-  ['close-wedding-edit','cancel-wedding-edit'].forEach(id=>$(id)?.addEventListener('click',()=>$('wedding-edit-dialog')?.close()));
-  document.addEventListener('click',async event=>{
-    const photo=event.target.closest('[data-wedding-photos]'),del=event.target.closest('[data-delete-wedding]'),edit=event.target.closest('[data-wedding-edit]'),view=event.target.closest('[data-wedding-view]');
-    if(photo){const r=weddings.find(x=>String(x.id)===String(photo.dataset.weddingPhotos));if(!r)return;const links=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const usable=links.filter(Boolean);if(!usable.length){alert('No accessible wedding photos found.');return;}const content=$('wedding-photos-content');if(content)content.innerHTML=usable.map((u,i)=>`<a class="wedding-photo-link" href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="Wedding photo ${i+1}"><span>Open photo ${i+1} ↗</span></a>`).join('');$('wedding-photos-dialog')?.showModal();return;}
-    if(view){const r=weddings.find(x=>String(x.id)===String(view.dataset.weddingView));if(!r)return;const photos=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const usable=photos.filter(Boolean);const html=`<div class="detail-cell"><small>Couples' names</small><b>${esc(r.couple_name||'—')}</b></div><div class="detail-cell"><small>Wedding date</small><b>${esc(fmtDate(r.wedding_date))}</b></div><div class="detail-cell"><small>Email address</small><b>${esc(r.email||'—')}</b></div><div class="detail-cell"><small>Registered</small><b>${esc(fmtDate(r.created_at))}</b></div><section class="wedding-detail-photo-section"><div class="wedding-photo-heading"><b>Uploaded photographs</b><span>${usable.length} photo${usable.length===1?'':'s'}</span></div><div class="wedding-detail-photos">${usable.length?usable.map((u,i)=>`<img src="${esc(u)}" alt="Wedding photograph ${i+1}" data-open-lightbox="${esc(u)}">`).join(''):'<span class="muted">No photographs uploaded.</span>'}</div></section>`;const c=$('wedding-details-content');if(c)c.innerHTML=html;$('wedding-details-dialog')?.showModal();return;}
-    if(edit){if(!isSuperAdmin){alert('Only a Super Administrator can edit wedding registrations.');return;}const r=weddings.find(x=>String(x.id)===String(edit.dataset.weddingEdit));if(!r)return;const f=$('wedding-edit-form');f.reset();f.elements.id.value=r.id;f.elements.couple_name.value=r.couple_name||'';f.elements.wedding_date.value=r.wedding_date||'';f.elements.email.value=r.email||'';f.elements.email.readOnly=true;const previews=await Promise.all(weddingPhotoPaths(r).map(weddingPhotoUrl));const box=$('wedding-edit-photo-preview');if(box)box.innerHTML=previews.filter(Boolean).map((u,i)=>`<img src="${esc(u)}" alt="Current wedding photo ${i+1}" data-open-lightbox="${esc(u)}">`).join('')||'<span class="muted">No existing photographs.</span>';say('wedding-edit-status','');$('wedding-edit-dialog')?.showModal();return;}
-    if(del){if(!isSuperAdmin)return;const id=del.dataset.deleteWedding,r=weddings.find(x=>String(x.id)===String(id));if(!r||!confirm(`Delete the wedding registration for ${weddingName(r)}? This cannot be undone.`))return;setBusy(del,true,'Deleting…');try{const {error}=await client.from('wedding_registrations').delete().eq('id',id);if(error)throw error;for(const path of weddingPhotoPaths(r)){const {error:se}=await client.storage.from(WEDDING_BUCKET).remove([path]);if(se)console.warn(se.message);}weddings=weddings.filter(x=>String(x.id)!==String(id));renderWeddings();renderWeddingOverview();renderWeddingMonthGrid();renderAnniversaries();await audit('wedding_registration_deleted','wedding_registrations',id,{couple_name:r.couple_name||''});say('wedding-status','Wedding registration deleted.','success');}catch(err){alert(`Could not delete wedding registration: ${err.message}`);setBusy(del,false);}}
-  });
-  $('close-wedding-photos')?.addEventListener('click',()=>$('wedding-photos-dialog')?.close());$('wedding-photos-close-button')?.addEventListener('click',()=>$('wedding-photos-dialog')?.close());
-  $('close-wedding-details')?.addEventListener('click',()=>$('wedding-details-dialog')?.close());$('wedding-details-close-button')?.addEventListener('click',()=>$('wedding-details-dialog')?.close());
-
-
-
-  document.addEventListener('click',event=>{const image=event.target.closest('[data-open-lightbox]');if(image){const d=$('photo-lightbox'),img=$('photo-lightbox-image');if(img)img.src=image.dataset.openLightbox;if(d&&!d.open)d.showModal();}});
-  $('photo-lightbox-close')?.addEventListener('click',()=>$('photo-lightbox')?.close());
-  ['alumni-dialog','alumni-details-dialog','wedding-details-dialog','wedding-edit-dialog','wedding-photos-dialog','photo-lightbox'].forEach(id=>{const d=$(id);d?.addEventListener('click',e=>{if(e.target===d)d.close();});d?.addEventListener('cancel',()=>d.close());});
-  $('wedding-edit-form')?.querySelector('[name="email"]')?.setAttribute('readonly','readonly');
-
-  /* ==========================================================
-     RENDER ALL DASHBOARD SECTIONS
-     ========================================================== */
-
-  function renderAll() {
-    renderOverview();
-    renderBirthdayOverview();
-    renderWeddingOverview();
-    renderWeddings();
-    renderWeddingMonthGrid();
-    renderAnniversaries();
-    renderDirectory();
-    renderBirthdays();
-
-    initMonthYear();
-    renderMonthGrid();
-
-    if (selectedMonth) {
-      selectMonth(selectedMonth);
-    }
-
-    renderMedia();
-    renderProjects();
-    renderMessages();
-  }
-
-  /* ==========================================================
-     START DASHBOARD
-     ========================================================== */
-
-  requireSession();
-
-})();
+/* Registration correction notice — requested light-mode colors */
+:root[data-theme="light"] .correction-link {
+  color: #ffffff;
+}
+:root[data-theme="light"] .correction-link a {
+  color: #ffdc45;
+}
+/* Dark mode keeps the existing correction notice colors. */
