@@ -1,1 +1,1073 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Register your wedding anniversary with the CACSF Alumni Fellowship.">
+
+<title>CACSF Wedding Anniversary Registration</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logoextension.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/logoextension.png">
+
+<link rel="stylesheet" href="assets/css/style.css">
+
+<style>
+/* Wedding photo previews */
+.wedding-photo-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 15px;
+}
+
+.wedding-photo-item {
+  display: none;
+  width: 125px;
+}
+
+.wedding-photo-item.visible {
+  display: block;
+}
+
+.wedding-photo-preview-button {
+  display: block;
+  width: 125px;
+  height: 125px;
+  padding: 5px;
+  border: 2px solid #d7d7d7;
+  border-radius: 50%;
+  background: #fff;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.wedding-photo-preview-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.wedding-photo-item small {
+  display: block;
+  margin-top: 7px;
+  text-align: center;
+  font-size: 11px;
+  opacity: .8;
+}
+
+.wedding-photo-hint {
+  display: none;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: .75;
+}
+
+.wedding-photo-hint.visible {
+  display: block;
+}
+
+/* Marriage duration display */
+.marriage-duration-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.marriage-duration-card small {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.marriage-duration-card strong {
+  display: block;
+  color: var(--deep);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+/* Full photograph preview */
+#wedding-photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .88);
+}
+
+#wedding-photo-lightbox.open {
+  display: flex;
+}
+
+#wedding-photo-lightbox .wedding-lightbox-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#wedding-photo-lightbox img {
+  display: block;
+  max-width: 95%;
+  max-height: 88vh;
+  max-height: 88dvh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 15px 60px rgba(0,0,0,.4);
+}
+
+#wedding-photo-lightbox .wedding-lightbox-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 2;
+  width: 43px;
+  height: 43px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255,255,255,.18);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#wedding-photo-lightbox .wedding-lightbox-close:hover {
+  background: rgba(255,255,255,.3);
+}
+
+/* Compact bottom navigation */
+.wedding-bottom-navigation {
+  width: min(100% - 40px, 720px);
+  margin: 28px auto 25px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wedding-navigation-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 82px;
+  padding: 13px 15px;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: var(--shadow);
+  transition: .25s ease;
+}
+
+.wedding-navigation-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--green);
+}
+
+.wedding-navigation-icon {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--deep);
+  background: var(--green);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.wedding-navigation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.wedding-navigation-content small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.wedding-navigation-content strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.wedding-navigation-content p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.wedding-navigation-arrow {
+  flex: 0 0 auto;
+  color: var(--deep);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.wedding-navigation-card.birthday-card .wedding-navigation-icon {
+  color: #fff;
+  background: var(--deep);
+}
+
+.wedding-navigation-card.birthday-card .wedding-navigation-arrow {
+  color: var(--green);
+}
+
+@media(max-width: 600px) {
+  .wedding-photo-preview-button {
+    width: 115px;
+    height: 115px;
+  }
+
+  #wedding-photo-lightbox {
+    padding: 12px;
+  }
+
+  #wedding-photo-lightbox img {
+    max-width: 100%;
+    max-height: 84vh;
+    max-height: 84dvh;
+  }
+
+  .wedding-bottom-navigation {
+    width: calc(100% - 30px);
+    gap: 9px;
+    margin: 23px auto;
+  }
+
+  .wedding-navigation-card {
+    min-height: 75px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .wedding-navigation-icon {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+    font-size: 17px;
+  }
+
+  .wedding-navigation-content small {
+    font-size: 7px;
+    letter-spacing: .5px;
+  }
+
+  .wedding-navigation-content strong {
+    font-size: 11px;
+  }
+
+  .wedding-navigation-content p {
+    font-size: 9px;
+  }
+
+  .wedding-navigation-arrow {
+    font-size: 15px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="register-header">
+  <a class="register-brand" href="index.html" aria-label="CACSF Alumni Fellowship home">
+    <img src="assets/cacsf-logo.png" alt="CACSF Alumni Fellowship logo">
+    <span>CACSF <small>ALUMNI FELLOWSHIP</small></span>
+  </a>
+
+  <button class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">☾</button>
+</header>
+
+<!-- WEDDING ANNIVERSARY REGISTRATION -->
+<main class="registration-main">
+
+  <section class="registration-intro" aria-labelledby="registration-title">
+
+    <div class="intro-kicker">
+      <span class="kicker-dot"></span>
+      CACSF ALUMNI FELLOWSHIP
+    </div>
+
+    <h1>Celebrate your <em>union.</em></h1>
+    <h2>Your love story is part of <em>our story.</em></h2>
+
+    <p class="intro-support">
+      Share your wedding anniversary with the CACSF family. Let us celebrate God's faithfulness in your marriage.
+    </p>
+
+    <div class="instruction-card">
+      <span class="instruction-icon" aria-hidden="true">♡</span>
+      <p>
+        Complete the form with your wedding details and upload a photograph.
+        You may upload one picture of both of you together or two separate pictures.
+        Accepted formats: JPG, JPEG and PNG. Maximum size: 20MB per photograph.
+      </p>
+    </div>
+
+  </section>
+
+  <section class="registration-form-wrap" aria-label="Wedding anniversary registration form">
+
+    <form id="wedding-form" class="site-form registration-form">
+
+      <div class="form-heading">
+        <span class="form-step">WEDDING ANNIVERSARY REGISTRATION</span>
+        <h3>Tell us about your union</h3>
+        <p>Fields marked with <b>*</b> are required.</p>
+      </div>
+
+      <div class="form-grid">
+
+        <!-- COUPLE NAME -->
+        <label class="full">
+          <span class="field-label">
+            Couple's name <span class="required-mark">*</span>
+          </span>
+
+          <input
+            type="text"
+            name="couple_name"
+            id="couple-name"
+            required
+            maxlength="150"
+            autocomplete="name"
+            placeholder="e.g. Mr and Mrs Bayo"
+          >
+        </label>
+
+        <!-- WEDDING DATE -->
+        <label>
+          <span class="field-label">
+            Wedding date <span class="required-mark">*</span>
+          </span>
+
+          <input
+            type="date"
+            name="wedding_date"
+            id="wedding-date"
+            required
+          >
+
+          <small>Select the actual date of your wedding.</small>
+        </label>
+
+        <!-- YEARS TOGETHER -->
+        <div>
+          <span class="field-label">Years of marriage</span>
+
+          <div class="marriage-duration-card" aria-live="polite">
+            <small>YOUR MARRIAGE DURATION</small>
+            <strong id="marriage-duration">Select your wedding date</strong>
+          </div>
+        </div>
+
+        <!-- EMAIL -->
+        <label class="full">
+          <span class="field-label">
+            Email address <span class="required-mark">*</span>
+          </span>
+
+          <input
+            type="email"
+            name="email"
+            id="wedding-email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+        </label>
+
+        <!-- PHOTO TYPE -->
+        <div class="full">
+          <span class="field-label">
+            Wedding photographs <span class="required-mark">*</span>
+          </span>
+
+          <p style="margin:5px 0 12px;color:var(--muted);font-size:13px;line-height:1.6;">
+            Choose how you want to upload your photographs.
+          </p>
+
+          <div style="display:grid;gap:10px;">
+
+            <label class="check-label">
+              <input
+                type="radio"
+                name="photo_type"
+                value="couple"
+                id="photo-type-couple"
+                checked
+              >
+              One picture showing both of us together
+            </label>
+
+            <label class="check-label">
+              <input
+                type="radio"
+                name="photo_type"
+                value="separate"
+                id="photo-type-separate"
+              >
+              Two separate individual pictures
+            </label>
+
+          </div>
+        </div>
+
+        <!-- ONE COUPLE PHOTO -->
+        <label class="full upload-field" id="couple-photo-field">
+
+          <span class="field-label">
+            Couple photograph <span class="required-mark">*</span>
+          </span>
+
+          <input
+            type="file"
+            id="couple-photo"
+            name="couple_photo"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            required
+          >
+
+          <small>Upload one clear photograph of both partners · Maximum 20MB</small>
+
+          <div class="wedding-photo-previews">
+            <div class="wedding-photo-item" id="couple-preview-item">
+              <button
+                type="button"
+                class="wedding-photo-preview-button"
+                data-preview="couple"
+                aria-label="Preview couple photograph"
+              >
+                <img id="couple-preview-image" src="" alt="Couple photograph preview">
+              </button>
+              <small>Couple photograph</small>
+            </div>
+          </div>
+
+        </label>
+
+        <!-- TWO SEPARATE PHOTOS -->
+        <div class="full" id="separate-photo-fields" hidden>
+
+          <label class="upload-field">
+            <span class="field-label">
+              First partner's photograph <span class="required-mark">*</span>
+            </span>
+
+            <input
+              type="file"
+              id="partner-one-photo"
+              name="partner_one_photo"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              disabled
+            >
+
+            <small>Maximum file size 20MB.</small>
+
+            <div class="wedding-photo-previews">
+              <div class="wedding-photo-item" id="partner-one-preview-item">
+                <button
+                  type="button"
+                  class="wedding-photo-preview-button"
+                  data-preview="partner-one"
+                  aria-label="Preview first partner photograph"
+                >
+                  <img id="partner-one-preview-image" src="" alt="First partner photograph preview">
+                </button>
+                <small>First partner</small>
+              </div>
+            </div>
+          </label>
+
+          <label class="upload-field" style="margin-top:20px;">
+            <span class="field-label">
+              Second partner's photograph <span class="required-mark">*</span>
+            </span>
+
+            <input
+              type="file"
+              id="partner-two-photo"
+              name="partner_two_photo"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              disabled
+            >
+
+            <small>Maximum file size 20MB.</small>
+
+            <div class="wedding-photo-previews">
+              <div class="wedding-photo-item" id="partner-two-preview-item">
+                <button
+                  type="button"
+                  class="wedding-photo-preview-button"
+                  data-preview="partner-two"
+                  aria-label="Preview second partner photograph"
+                >
+                  <img id="partner-two-preview-image" src="" alt="Second partner photograph preview">
+                </button>
+                <small>Second partner</small>
+              </div>
+            </div>
+          </label>
+
+        </div>
+
+        <label class="full check-label">
+          <input type="checkbox" name="consent" required>
+          I agree that CACSF Alumni Fellowship may use these details and photographs to celebrate our wedding anniversary and communicate alumni updates.
+        </label>
+
+      </div>
+
+      <button class="btn btn-primary registration-submit" id="wedding-submit" type="submit">
+        SUBMIT WEDDING DETAILS <span aria-hidden="true">↗</span>
+      </button>
+
+      <p class="form-status" id="wedding-status" role="status" aria-live="polite"></p>
+
+    </form>
+
+  </section>
+
+  <!-- COMPACT BOTTOM NAVIGATION -->
+  <section class="wedding-bottom-navigation" aria-label="Other CACSF pages">
+
+    <a href="index.html" class="wedding-navigation-card home-card">
+      <span class="wedding-navigation-icon" aria-hidden="true">⌂</span>
+
+      <span class="wedding-navigation-content">
+        <small>MAIN PAGE</small>
+        <strong>Back to Home</strong>
+        <p>Return to the welcome page.</p>
+      </span>
+
+      <span class="wedding-navigation-arrow" aria-hidden="true">→</span>
+    </a>
+
+    <a href="birthday.html" class="wedding-navigation-card birthday-card">
+      <span class="wedding-navigation-icon" aria-hidden="true">♡</span>
+
+      <span class="wedding-navigation-content">
+        <small>BIRTHDAY REGISTRATION</small>
+        <strong>Register for Birthday</strong>
+        <p>Share your birthday with us.</p>
+      </span>
+
+      <span class="wedding-navigation-arrow" aria-hidden="true">→</span>
+    </a>
+
+  </section>
+
+  <div class="registration-footnote">
+    <img src="assets/cacsf-logo.png" alt="CACSF logo">
+    <span>CACSF..... LIBERATION FAMILY</span>
+  </div>
+
+</main>
+
+<!-- FULL-SIZE PHOTO PREVIEW -->
+<div
+  id="wedding-photo-lightbox"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Wedding photograph full preview"
+>
+  <div class="wedding-lightbox-content">
+
+    <button
+      type="button"
+      class="wedding-lightbox-close"
+      id="wedding-photo-lightbox-close"
+      aria-label="Close photograph preview"
+    >×</button>
+
+    <img id="wedding-photo-lightbox-image" src="" alt="Full wedding photograph preview">
+
+  </div>
+</div>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/supabase.js"></script>
+
+<script>
+/* =========================================
+   WEDDING ANNIVERSARY REGISTRATION
+========================================= */
+
+(() => {
+  "use strict";
+
+  const form = document.getElementById("wedding-form");
+  const status = document.getElementById("wedding-status");
+  const submitButton = document.getElementById("wedding-submit");
+
+  const weddingDateInput = document.getElementById("wedding-date");
+  const durationText = document.getElementById("marriage-duration");
+
+  const coupleRadio = document.getElementById("photo-type-couple");
+  const separateRadio = document.getElementById("photo-type-separate");
+
+  const coupleField = document.getElementById("couple-photo-field");
+  const separateFields = document.getElementById("separate-photo-fields");
+
+  const coupleInput = document.getElementById("couple-photo");
+  const partnerOneInput = document.getElementById("partner-one-photo");
+  const partnerTwoInput = document.getElementById("partner-two-photo");
+
+  const lightbox = document.getElementById("wedding-photo-lightbox");
+  const lightboxImage = document.getElementById("wedding-photo-lightbox-image");
+  const closeButton = document.getElementById("wedding-photo-lightbox-close");
+
+  const MAX_FILE_SIZE = 20 * 1024 * 1024;
+  const ALLOWED_TYPES = ["image/jpeg", "image/png"];
+
+  const previews = {
+    couple: {
+      input: coupleInput,
+      item: document.getElementById("couple-preview-item"),
+      image: document.getElementById("couple-preview-image")
+    },
+    "partner-one": {
+      input: partnerOneInput,
+      item: document.getElementById("partner-one-preview-item"),
+      image: document.getElementById("partner-one-preview-image")
+    },
+    "partner-two": {
+      input: partnerTwoInput,
+      item: document.getElementById("partner-two-preview-item"),
+      image: document.getElementById("partner-two-preview-image")
+    }
+  };
+
+  const photoUrls = {};
+
+  function setStatus(message, type = "") {
+    status.textContent = message;
+    status.className = "form-status";
+
+    if (type) {
+      status.classList.add(type);
+    }
+  }
+
+  /* -----------------------------------------
+     YEARS OF MARRIAGE
+  ----------------------------------------- */
+
+  function calculateMarriageDuration() {
+    const value = weddingDateInput.value;
+
+    if (!value) {
+      durationText.textContent = "Select your wedding date";
+      return;
+    }
+
+    const weddingDate = new Date(value + "T00:00:00");
+    const today = new Date();
+
+    if (Number.isNaN(weddingDate.getTime())) {
+      durationText.textContent = "Invalid wedding date";
+      return;
+    }
+
+    if (weddingDate > new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+      durationText.textContent = "Wedding date cannot be in the future";
+      return;
+    }
+
+    let years = today.getFullYear() - weddingDate.getFullYear();
+
+    const anniversaryThisYear = new Date(
+      today.getFullYear(),
+      weddingDate.getMonth(),
+      weddingDate.getDate()
+    );
+
+    if (today < anniversaryThisYear) {
+      years--;
+    }
+
+    durationText.textContent =
+      years === 1 ? "1 year together" : years + " years together";
+  }
+
+  weddingDateInput.addEventListener("change", calculateMarriageDuration);
+
+  /* -----------------------------------------
+     PHOTO MODE SWITCHING
+  ----------------------------------------- */
+
+  function updatePhotoMode() {
+    const isCoupleMode = coupleRadio.checked;
+
+    coupleField.hidden = !isCoupleMode;
+    separateFields.hidden = isCoupleMode;
+
+    coupleInput.disabled = !isCoupleMode;
+    partnerOneInput.disabled = isCoupleMode;
+    partnerTwoInput.disabled = isCoupleMode;
+
+    coupleInput.required = isCoupleMode;
+    partnerOneInput.required = !isCoupleMode;
+    partnerTwoInput.required = !isCoupleMode;
+
+    if (isCoupleMode) {
+      clearPreview("partner-one");
+      clearPreview("partner-two");
+      partnerOneInput.value = "";
+      partnerTwoInput.value = "";
+    } else {
+      clearPreview("couple");
+      coupleInput.value = "";
+    }
+
+    setStatus("");
+  }
+
+  coupleRadio.addEventListener("change", updatePhotoMode);
+  separateRadio.addEventListener("change", updatePhotoMode);
+
+  /* -----------------------------------------
+     PHOTO PREVIEWS
+  ----------------------------------------- */
+
+  function clearPreview(key) {
+    const preview = previews[key];
+
+    if (!preview) return;
+
+    preview.item.classList.remove("visible");
+    preview.image.removeAttribute("src");
+
+    if (photoUrls[key]) {
+      URL.revokeObjectURL(photoUrls[key]);
+      delete photoUrls[key];
+    }
+  }
+
+  function validatePhoto(file) {
+    if (!file) return "Please select the required photograph.";
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return "Please select a JPG, JPEG or PNG photograph.";
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return "Each photograph must not exceed 20MB.";
+    }
+
+    return "";
+  }
+
+  Object.entries(previews).forEach(([key, preview]) => {
+
+    preview.input.addEventListener("change", () => {
+      clearPreview(key);
+
+      const file = preview.input.files && preview.input.files[0];
+
+      if (!file) return;
+
+      const error = validatePhoto(file);
+
+      if (error) {
+        alert(error);
+        preview.input.value = "";
+        return;
+      }
+
+      photoUrls[key] = URL.createObjectURL(file);
+
+      preview.image.src = photoUrls[key];
+      preview.item.classList.add("visible");
+    });
+
+    preview.item.querySelector("button").addEventListener("click", () => {
+      if (!photoUrls[key]) return;
+
+      lightboxImage.src = photoUrls[key];
+      lightbox.classList.add("open");
+      document.body.style.overflow = "hidden";
+      closeButton.focus();
+    });
+
+  });
+
+  function closeLightbox() {
+    lightbox.classList.remove("open");
+    lightboxImage.removeAttribute("src");
+    document.body.style.overflow = "";
+  }
+
+  closeButton.addEventListener("click", closeLightbox);
+
+  lightbox.addEventListener("click", event => {
+    if (event.target === lightbox) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && lightbox.classList.contains("open")) {
+      closeLightbox();
+    }
+  });
+
+  /* -----------------------------------------
+     SUPABASE CLIENT
+  ----------------------------------------- */
+
+  function getSupabaseClient() {
+    if (window.cacsf?.supabase) {
+      return window.cacsf.supabase;
+    }
+
+    if (window.supabaseClient) {
+      return window.supabaseClient;
+    }
+
+    if (
+      window.supabase &&
+      window.CACSF_SUPABASE_URL &&
+      window.CACSF_SUPABASE_ANON_KEY &&
+      !window.CACSF_SUPABASE_URL.startsWith("YOUR_") &&
+      !window.CACSF_SUPABASE_ANON_KEY.startsWith("YOUR_")
+    ) {
+      return window.supabase.createClient(
+        window.CACSF_SUPABASE_URL,
+        window.CACSF_SUPABASE_ANON_KEY
+      );
+    }
+
+    return null;
+  }
+
+  /* -----------------------------------------
+     UPLOAD WEDDING PHOTOGRAPHS
+  ----------------------------------------- */
+
+  async function uploadWeddingPhoto(client, file, label) {
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    const safeExtension = ["jpg", "jpeg", "png"].includes(extension)
+      ? extension
+      : "jpg";
+
+    const fileName =
+      Date.now() + "-" +
+      label + "-" +
+      crypto.randomUUID() + "." +
+      safeExtension;
+
+    const filePath = "weddings/" + fileName;
+
+    const { error } = await client.storage
+      .from("cacsf-weddings")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type
+      });
+
+    if (error) {
+      throw new Error("Photo upload failed: " + error.message);
+    }
+
+    return filePath;
+  }
+
+  /* -----------------------------------------
+     FORM SUBMISSION
+  ----------------------------------------- */
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    setStatus("");
+
+    const coupleName = document.getElementById("couple-name").value.trim();
+    const email = document.getElementById("wedding-email").value.trim();
+    const weddingDate = weddingDateInput.value;
+
+    if (!coupleName || !email || !weddingDate) {
+      setStatus("Please complete all required fields.", "error");
+      return;
+    }
+
+    const selectedDate = new Date(weddingDate + "T00:00:00");
+
+    if (selectedDate > new Date(new Date().toDateString())) {
+      setStatus("Please select a wedding date that is not in the future.", "error");
+      return;
+    }
+
+    const isCoupleMode = coupleRadio.checked;
+
+    const selectedFiles = isCoupleMode
+      ? [coupleInput.files[0]]
+      : [partnerOneInput.files[0], partnerTwoInput.files[0]];
+
+    for (const file of selectedFiles) {
+      const error = validatePhoto(file);
+
+      if (error) {
+        setStatus(error, "error");
+        return;
+      }
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setStatus(
+        "Supabase is not configured. Please check your CACSF configuration file.",
+        "error"
+      );
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "SUBMITTING YOUR DETAILS...";
+
+    let uploadedPaths = [];
+
+    try {
+      let photoOnePath;
+      let photoTwoPath = null;
+
+      if (isCoupleMode) {
+        photoOnePath = await uploadWeddingPhoto(
+          client,
+          coupleInput.files[0],
+          "couple"
+        );
+
+        uploadedPaths.push(photoOnePath);
+
+      } else {
+        photoOnePath = await uploadWeddingPhoto(
+          client,
+          partnerOneInput.files[0],
+          "partner-one"
+        );
+
+        uploadedPaths.push(photoOnePath);
+
+        photoTwoPath = await uploadWeddingPhoto(
+          client,
+          partnerTwoInput.files[0],
+          "partner-two"
+        );
+
+        uploadedPaths.push(photoTwoPath);
+      }
+
+      const registration = {
+        couple_name: coupleName,
+        wedding_date: weddingDate,
+        email: email,
+        photo_one_path: photoOnePath,
+        photo_two_path: photoTwoPath
+      };
+
+      const { error } = await client
+        .from("wedding_registrations")
+        .insert([registration]);
+
+      if (error) {
+        throw error;
+      }
+
+      setStatus(
+        "Your wedding anniversary details have been submitted successfully. Thank you!",
+        "success"
+      );
+
+      form.reset();
+
+      updatePhotoMode();
+      calculateMarriageDuration();
+
+      Object.keys(previews).forEach(clearPreview);
+
+      uploadedPaths = [];
+
+    } catch (error) {
+      console.error("Wedding registration error:", error);
+
+      /*
+       * Clean up photos uploaded during a failed submission.
+       */
+      if (uploadedPaths.length) {
+        try {
+          await client.storage
+            .from("cacsf-weddings")
+            .remove(uploadedPaths);
+        } catch (cleanupError) {
+          console.error("Photo cleanup error:", cleanupError);
+        }
+      }
+
+      setStatus(
+        error.message || "Something went wrong. Please try again.",
+        "error"
+      );
+
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML =
+        'SUBMIT WEDDING DETAILS <span aria-hidden="true">↗</span>';
+    }
+
+  });
+
+  /* -----------------------------------------
+     CLEAN UP PREVIEW URLS
+  ----------------------------------------- */
+
+  window.addEventListener("beforeunload", () => {
+    Object.values(photoUrls).forEach(url => {
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  updatePhotoMode();
+  calculateMarriageDuration();
+
+})();
+</script>
+
+</body>
+</html>
